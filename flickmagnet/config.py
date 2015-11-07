@@ -96,6 +96,7 @@ import sqlite3
 def db_connect():
     db = sqlite3.connect( os.path.join(data_dir, app_name + '.db') )
     db.row_factory = sqlite3.Row
+    # @todo create database tables on first run
     return db
 
 

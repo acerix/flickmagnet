@@ -1,0 +1,15 @@
+[Unit]
+Description=Flick Magnet Server
+After=network.target
+
+[Service]
+User=flickmagnet
+Group=flickmagnet
+
+Type=simple
+ExecStart=/usr/bin/python3 /usr/lib/python3.5/site-packages/flickmagnet/flickmagnetd.py
+
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

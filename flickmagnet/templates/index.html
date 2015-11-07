@@ -1,0 +1,56 @@
+<%inherit file="base.html"/>
+
+<div class="container">
+
+<h2>Movies</h2>
+<table class="table">
+% for r in movies:
+    <tr>
+        <td>
+            ${r['name'] | h}
+        </td>
+        <td>
+            ${r['synopsis'] | h}
+        </td>
+        <td>
+            <a href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}/" target="_blank">
+                IMDB
+            </a>
+        </td>
+        <td>
+            <a href="/play?entity_type=movie&amp;entity_id=${r['id']}" target="_blank">
+                Play
+            </a>
+        </td>
+    </tr>
+% endfor
+</table>
+
+<h2>TV Series</h2>
+<table class="table">
+% for r in episodes:
+    <tr>
+        <td>
+            ${r['series_name'] | h}
+        </td>
+        <td>
+            ${'S{0:02d}E{0:02d}'.format(r['season_number'], r['number'])}
+        </td>
+        <td>
+            ${r['synopsis'] | h}
+        </td>
+        <td>
+            <a href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}" target="_blank">
+                IMDB
+            </a>
+        </td>
+        <td>
+            <a href="/play?entity_type=episode&amp;entity_id=${r['id']}" target="_blank">
+                Play
+            </a>
+        </td>
+    </tr>
+% endfor
+</table>
+
+</div>

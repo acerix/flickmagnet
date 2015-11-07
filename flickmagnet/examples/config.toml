@@ -1,0 +1,22 @@
+
+# Flick Magnet Server Configuration
+
+[server]
+
+# A name to identify the server
+name = "Flick Magnet"
+
+# Preferred video quality: 480, 720, or 1080
+preferred_quality = 720
+
+# Port to listen for HTTP clients, defaults to a random port
+http_port = 42000
+
+# IP to listen for HTTP clients
+http_addr = "0.0.0.0"
+
+# Hostname that HTTP clients can connect to, defaults to local network IP
+# http_host = "flickmag.net"
+
+# Port to listen for bittorrent, defaults to a random port
+# torrent_port = 6881

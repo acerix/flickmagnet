@@ -1,0 +1,21 @@
+<%inherit file="base.html"/>
+
+<style>
+body {
+    background: #000;
+}
+a {
+    color: #fff;
+}
+</style>
+
+<div class="embed-responsive embed-responsive-16by9">
+    <video controls autoplay>
+        <source src="/stream?magnet_file_id=${magnet_file_id}" type="video/mp4">
+    </video>
+</div>
+
+<div class="btn-group" role="group" aria-label="...">
+    <a class="btn" href="/xspf?magnet_file_id=${magnet_file_id}">Stream from Playlist</a>
+    <a class="btn" href="/stream?magnet_file_id=${magnet_file_id}">Download Video</a>
+</div>

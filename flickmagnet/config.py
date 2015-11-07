@@ -16,7 +16,7 @@ package_dir = os.path.dirname(os.path.realpath(__file__))
 config_dir = BaseDirectory.save_config_path(app_name)
 data_dir = BaseDirectory.save_data_path(app_name)
 cache_dir = BaseDirectory.save_cache_path(app_name)
-runtime_dir = BaseDirectory.get_runtime_dir(app_name)
+#runtime_dir = BaseDirectory.get_runtime_dir(app_name)
 
 config_file = os.path.join(config_dir, 'config.toml')
 

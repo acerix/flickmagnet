@@ -68,8 +68,7 @@ torrent_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # test http port or get a random one if not defined
 if 'http_port' in settings['server']:
-    pass # off for testing
-    #http_sock.bind((settings['server']['http_addr'], settings['server']['http_port']))
+    http_sock.bind((settings['server']['http_addr'], settings['server']['http_port']))
 
 else:
     http_sock.bind((settings['server']['http_addr'], 0))
@@ -77,10 +76,10 @@ else:
 
 # test torrent port or get a random one if not defined
 if 'torrent_port' in settings['server']:
-    http_sock.bind((settings['server']['torrent_addr'], settings['server']['http_port']))
+    torrent_sock.bind(('0.0.0.0', settings['server']['http_port']))
 
 else:
-    torrent_sock.bind((settings['server']['torrent_addr'], 0))
+    torrent_sock.bind(('0.0.0.0', 0))
     settings['server']['torrent_port'] = torrent_sock.getsockname()[1]
 
 # @todo would be better to keep open

@@ -4,7 +4,7 @@ import shutil
 import pytoml as toml
 import socket
 
-app_name = 'flickmagnetd'
+app_name = 'flickmagnet'
 
 
 

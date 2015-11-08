@@ -96,7 +96,13 @@ import sqlite3
 def db_connect():
     db = sqlite3.connect( os.path.join(data_dir, app_name + '.db') )
     db.row_factory = sqlite3.Row
-    # @todo create database tables on first run
+
+    # initialize tables if none exist
+    table_count = db.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
+    if table_count is 0:
+        f = open(os.path.join(package_dir, 'examples', 'db.sql'),'r')
+        db.executescript(f.read())
+
     return db
 
 
@@ -123,4 +129,3 @@ settings['server']['cached_tables'] = {}
 settings['server']['cached_tables']['entity_type'] = db_table_to_name_dict('entity_type');
 settings['server']['cached_tables']['magnet_file_status'] = db_table_to_name_dict('magnet_file_status');
 settings['server']['cached_tables']['tag'] = db_table_to_name_dict('tag');
-

@@ -18,12 +18,12 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.0.1',
+    version='0.0.2',
 
     description='HTTP server similar to Netflix and PopcornTime which streams public domain videos from torrent files',
     keywords='netflix streaming movie tv',
     long_description=long_description,
-    url='https://github.com/acerix/flickmagnet',
+    url='http://flickmag.net/',
     author='acerix',
     author_email='acerix@flickmag.net',
     license='MIT',
@@ -37,6 +37,8 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Indexing/Search',
         'Topic :: Multimedia :: Video',
         'License :: OSI Approved :: MIT License',
+        'Environment :: No Input/Output (Daemon)',
+        'Operating System :: POSIX :: Linux',
     ],
 
     packages=['flickmagnet'],

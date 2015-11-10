@@ -261,10 +261,14 @@ def start(settings, db_connect):
         '/',
         {
             '/': {
-                'tools.sessions.on': True,
+                #'tools.sessions.on': True,
                 'tools.staticdir.on': True,
-                'tools.staticdir.root': ht_dir,
-                'tools.staticdir.dir': ''
+                #'tools.staticdir.root': ht_dir,
+                'tools.staticdir.dir': ht_dir
+            },
+            '/t': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': settings['thumbnail_dir']
             },
             '/favicon.ico': {
                 'tools.staticfile.on': True,
@@ -276,7 +280,7 @@ def start(settings, db_connect):
             },
             '/static': {
                 'tools.staticdir.on': True,
-                'tools.staticdir.dir': 'static'
+                'tools.staticdir.dir': os.path.join(ht_dir, 'static')
             }
         }
     )

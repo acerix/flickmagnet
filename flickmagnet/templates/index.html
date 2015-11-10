@@ -7,19 +7,26 @@
 % for r in movies:
     <tr>
         <td>
-            ${r['name'] | h}
+            <img src="/t/${r['id']}.jpg" alt="">
         </td>
         <td>
-            ${r['synopsis'] | h}
+            <h2 style="margin-top:0">${r['name'] | h}</h2>
+            <p>${r['synopsis'] | h}</p>
         </td>
-        <td>
-            <a href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}/" target="_blank">
+        <td class="btn-group-vertical" role="group" aria-label="...">
+            <a class="btn btn-default" href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}/" target="_blank">
                 IMDB
+                <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
             </a>
-        </td>
-        <td>
-            <a href="/play?entity_type=movie&amp;entity_id=${r['id']}" target="_blank">
+            <!--
+            <a class="btn btn-default" href="" target="_blank">
+                Trailer
+                <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+            </a>
+            -->
+            <a class="btn btn-success" href="/play?entity_type=movie&amp;entity_id=${r['id']}" target="_blank">
                 Play
+                <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
             </a>
         </td>
     </tr>

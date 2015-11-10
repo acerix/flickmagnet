@@ -53,7 +53,7 @@ setup(
     },
 
     install_requires=[
-        'xdg',
+        'pyxdg',
         'daemonocle',
         'pytoml',
         'cherrypy',

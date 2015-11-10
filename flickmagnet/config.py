@@ -16,7 +16,6 @@ package_dir = os.path.dirname(os.path.realpath(__file__))
 config_dir = BaseDirectory.save_config_path(app_name)
 data_dir = BaseDirectory.save_data_path(app_name)
 cache_dir = BaseDirectory.save_cache_path(app_name)
-#runtime_dir = BaseDirectory.get_runtime_dir(app_name)
 
 config_file = os.path.join(config_dir, 'config.toml')
 
@@ -24,7 +23,7 @@ config_file = os.path.join(config_dir, 'config.toml')
 # load config file
 
 if not os.path.isfile(config_file):
-    shutil.copyfile(os.path.join(package_dir, 'examples/config.toml'), config_file)
+    shutil.copyfile(os.path.join(package_dir, 'examples', 'config.toml'), config_file)
 
 with open(config_file) as config_file_object:
     settings = toml.load(config_file_object)
@@ -38,6 +37,14 @@ settings['server']['download_dir'] = cache_dir
 # where htdocs are stored
 
 settings['server']['htdocs_dir'] = os.path.join(package_dir, 'htdocs')
+
+
+# where cover images are stored
+
+settings['server']['thumbnail_dir'] = os.path.join(data_dir, 'thumbnail')
+
+if not os.path.exists(settings['server']['thumbnail_dir']):
+    os.makedirs(settings['server']['thumbnail_dir'])
 
 
 
@@ -88,6 +95,8 @@ torrent_sock.close()
 
 
 
+# database just initialized?
+settings['server']['first_run'] = False
 
 # define database connection
 
@@ -100,6 +109,7 @@ def db_connect():
     # initialize tables if none exist
     table_count = db.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
     if table_count is 0:
+        settings['server']['first_run'] = True
         f = open(os.path.join(package_dir, 'examples', 'db.sql'),'r')
         db.executescript(f.read())
 
@@ -127,5 +137,6 @@ ORDER BY
 # cached tables
 settings['server']['cached_tables'] = {}
 settings['server']['cached_tables']['entity_type'] = db_table_to_name_dict('entity_type');
+settings['server']['cached_tables']['entity_status'] = db_table_to_name_dict('entity_status');
 settings['server']['cached_tables']['magnet_file_status'] = db_table_to_name_dict('magnet_file_status');
 settings['server']['cached_tables']['tag'] = db_table_to_name_dict('tag');

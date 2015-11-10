@@ -13,7 +13,6 @@ import sys
 import os
 import time
 
-
 def main():
 
     logging.basicConfig(
@@ -26,17 +25,19 @@ def main():
     # start torrentd
     torrentd_pid = os.fork()
     if torrentd_pid == 0:
+        #os._exit(0) # dont actually start
         torrentd.start(config.settings['server'], config.db_connect, config.cache_dir)
 
     # start httpd
     httpd_pid = os.fork()
     if httpd_pid == 0:
+        #os._exit(0) # dont actually start
         httpd.start(config.settings['server'], config.db_connect)
 
     # start spiderd
     spiderd_pid = os.fork()
     if spiderd_pid == 0:
-        os._exit(0) # dont actually start
+        #os._exit(0) # dont actually start
         spiderd.start(config.settings['server'], config.db_connect)
 
     while True:
@@ -60,3 +61,4 @@ if __name__ == '__main__':
     )
     if (len(sys.argv) > 1):
         daemon.do_action(sys.argv[1])
+

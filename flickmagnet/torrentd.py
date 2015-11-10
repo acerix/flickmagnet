@@ -150,6 +150,8 @@ def start_streaming_magnet_file(session_handle, save_path, btih, video_filename,
 
     # @todo start downloading at "byte_offset", eg. so the video player can seek ahead
 
+    # @todo stop any other downloads
+
     #torrent_status = torrent_handle.status()
 
 
@@ -193,31 +195,3 @@ WHERE
     r['id']
 ))
         db.commit()
-
-    return
-
-    dbc = db.execute("""
-SELECT
-    *
-FROM
-    magnet_file
-WHERE
-    status_id = 22
-ORDER BY
-    id ASC
-""")
-    stop_streaming_magnet_files = dbc.fetchall()
-    print(stop_streaming_magnet_files)
-
-    dbc = db.execute("""
-SELECT
-    *
-FROM
-    magnet_file
-WHERE
-    status_id = 23
-ORDER BY
-    id ASC
-""")
-    delete_magnet_files = dbc.fetchall()
-    print(delete_magnet_files)

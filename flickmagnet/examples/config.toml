@@ -9,6 +9,10 @@ name = "Flick Magnet"
 # Preferred video quality: 480, 720, or 1080
 preferred_quality = 720
 
+# How many years after a movie is published that it becomes public domain and can be shared
+# Adjust this for your local copyright terms: https://en.wikipedia.org/wiki/List_of_countries%27_copyright_lengths
+copyright_length = 95
+
 # Port to listen for HTTP clients, defaults to a random port
 http_port = 42000
 

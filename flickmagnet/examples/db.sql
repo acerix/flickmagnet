@@ -74,10 +74,11 @@ CREATE TABLE "movie" (
 	`seconds_long`	INTEGER,
 	`rating`	REAL,
 	`synopsis`	TEXT,
+	`status_id`	INTEGER NOT NULL DEFAULT 1,
 	`added`	TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(id)
 );
-INSERT INTO `movie` VALUES (16544,'The Wizard of Oz',1925,4860,5.3,'Dorothy, heir to the Oz throne, must take it back from the wicked Prime Minister Kruel with the help of three farmhands.','2015-10-26 23:52:07');
+INSERT INTO `movie` VALUES (16544,'The Wizard of Oz',1925,4860,5.3,'Dorothy, heir to the Oz throne, must take it back from the wicked Prime Minister Kruel with the help of three farmhands.',51,'2015-10-26 23:52:07');
 CREATE TABLE "magnet_file_status" (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
 	`name`	TEXT NOT NULL UNIQUE
@@ -119,6 +120,7 @@ CREATE TABLE "episode" (
 	`seconds_long`	INTEGER,
 	`rating`	REAL,
 	`synopsis`	TEXT,
+	`status_id`	INTEGER NOT NULL DEFAULT 1,
 	`added`	TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(id)
 );
@@ -129,4 +131,11 @@ CREATE TABLE `entity_type` (
 INSERT INTO `entity_type` VALUES (1,'episode'),
  (2,'movie'),
  (3,'song');
+CREATE TABLE "entity_status" (
+	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+	`name`	TEXT NOT NULL UNIQUE
+);
+INSERT INTO `entity_status` VALUES (1,'new'),
+ (51,'magnetized'),
+ (52,'unavailable');
 COMMIT;

@@ -63,4 +63,8 @@ setup(
         'python-libtorrent',
     ],
 
+    dependency_links = [
+        'http://sourceforge.net/projects/libtorrent/files/latest/download#egg=python-libtorrent',
+    ],
+
 )

@@ -1,21 +1,24 @@
 <%inherit file="base.html"/>
 
-<style>
-body {
-    background: #000;
-}
-a {
-    color: #fff;
-}
-</style>
+<div class="container">
 
-<div class="embed-responsive embed-responsive-16by9">
-    <video controls autoplay>
-        <source src="/stream?magnet_file_id=${magnet_file_id}" type="video/mp4">
-    </video>
-</div>
+    <div class="btn-group" role="group" aria-label="...">
+        <a class="btn btn-default" href="/stream?magnet_file_id=${magnet_file_id}">Download Video</a>
+        <a class="btn btn-default" href="/xspf?magnet_file_id=${magnet_file_id}">Download Playlist</a>
+    </div>
 
-<div class="btn-group" role="group" aria-label="...">
-    <a class="btn" href="/xspf?magnet_file_id=${magnet_file_id}">Stream from Playlist</a>
-    <a class="btn" href="/stream?magnet_file_id=${magnet_file_id}">Download Video</a>
+    <br>
+
+    <br>
+
+    <div class="embed-responsive embed-responsive-16by9">
+        <video controls preload="auto" autoplay poster="/t/${entity_id}.jpg">
+            <source src="/stream?magnet_file_id=${magnet_file_id}" type="video/mp4">
+        </video>
+    </div>
+
+    <br>
+
+    <p>To stream from an external player like <a href="http://www.videolan.org/">VLC</a>, use "Download Playlist".</p>
+
 </div>

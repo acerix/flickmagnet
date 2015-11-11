@@ -254,12 +254,12 @@ VALUES
 
                 magnets_found += 1
 
-                # stop after finding three
-                if magnets_found > 2:
+                # stop after finding one
+                if magnets_found > 0:
                     break
 
-            # stop after finding three
-            if magnets_found > 2:
+            # stop after finding one
+            if magnets_found > 0:
                 break
 
         #print('mf:', magnets_found)

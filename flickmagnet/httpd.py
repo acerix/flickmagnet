@@ -96,6 +96,8 @@ LIMIT
 
 
 
+
+
     # video player
 
     @cherrypy.expose
@@ -138,6 +140,7 @@ WHERE
             cherrypy.thread_data.db.commit()
 
             return page_template.render(
+                entity_id = entity_id,
                 magnet_file_id = magnet_file['id']
             )
 
@@ -170,6 +173,7 @@ WHERE
 
         location = 'http://%s:%d/stream?magnet_file_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], magnet_file_id)
 
+        # @todo actual duration
         duration = 69
 
         cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
@@ -185,7 +189,10 @@ WHERE
 
         magnet_file_id = int(magnet_file_id)
 
-        dbc = cherrypy.thread_data.db.execute("""
+        # wait for torrent metadata to be downloaded and video file to be located
+        for n in range(30):
+
+            dbc = cherrypy.thread_data.db.execute("""
 SELECT
     *
 FROM
@@ -196,28 +203,52 @@ WHERE
     magnet_file_id
 ])
 
-        magnet_file = dbc.fetchone()
-        cherrypy.thread_data.db.commit()
+            magnet_file = dbc.fetchone()
 
-        video_filename = os.path.join(cherrypy.thread_data.settings['download_dir'], magnet_file['filename'])
-
-        # wait for torrent to start downloading
-        for n in range(30):
-            if os.path.isfile(video_filename):
+            if len(magnet_file['filename']):
                 break
-            print('waiting for torrent to start')
+
+            print('waiting for torrent metadata')
             time.sleep(n)
 
 
-        file_object = open(video_filename, 'rb')
+
+
+        video_filename = os.path.join(cherrypy.thread_data.settings['download_dir'], magnet_file['filename'])
+
+        # wait for video file to start downloading
+        for n in range(30):
+            if os.path.isfile(video_filename):
+                break
+            print('waiting for video to start downloading')
+            time.sleep(n)
+
 
         cherrypy.response.headers['Content-Type'] = 'video/mpeg'
+
+        # @todo "The requested resource returned more bytes than the declared Content-Length" ... libtorrent not pre-allocating?
         cherrypy.response.headers['Content-Length'] = os.path.getsize(video_filename)
 
-        #cherrypy.response.headers['Accept-Ranges'] = 'bytes'
+        cherrypy.response.headers['Accept-Ranges'] = 'bytes'
 
-        # @todo: block until downloaded
+        file_object = open(video_filename, 'rb')
+
+        # if download is complete, output the file contents all at once
+        #if (torrent.is_complete):
         return file_object.read()
+
+        # switch to streaming mode
+        cherrypy.response.stream = True
+
+        # yields chunks of data or sleeps until data is available
+        def video_stream_or_block():
+            # @todo start at beginning or range?
+            # @todo get torrent block size
+            # @todo foreach (block): if (downloaded) yield, else sleep
+            yield "Hello, "
+            yield "world"
+
+        return video_stream_or_block()
 
 
 
@@ -252,7 +283,7 @@ def start(settings, db_connect):
     if settings['http_port'] != 80:
             access_url += ':' + str(settings['http_port'])
     access_url += '/'
-    print('Point your browsers to', access_url)
+    print('Point your browser to', access_url)
     print()
 
 

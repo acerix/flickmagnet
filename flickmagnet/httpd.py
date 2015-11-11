@@ -229,13 +229,16 @@ WHERE
         # @todo "The requested resource returned more bytes than the declared Content-Length" ... libtorrent not pre-allocating?
         cherrypy.response.headers['Content-Length'] = os.path.getsize(video_filename)
 
-        cherrypy.response.headers['Accept-Ranges'] = 'bytes'
+        # @todo need to accept ranges so video players can seek
+        #cherrypy.response.headers['Accept-Ranges'] = 'bytes'
 
         file_object = open(video_filename, 'rb')
 
         # if download is complete, output the file contents all at once (@todo is there a way to return as static file?)
-        #if (torrent.is_complete):
+        #if (torrent_status.is_seeding):
         return file_object.read()
+
+        # torrent_handle::file_progress   ?
 
         # switch to streaming mode
         cherrypy.response.stream = True

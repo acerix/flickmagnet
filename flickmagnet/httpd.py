@@ -233,17 +233,16 @@ WHERE
 
         file_object = open(video_filename, 'rb')
 
-        # if download is complete, output the file contents all at once
+        # if download is complete, output the file contents all at once (@todo is there a way to return as static file?)
         #if (torrent.is_complete):
         return file_object.read()
 
         # switch to streaming mode
         cherrypy.response.stream = True
 
-        # yields chunks of data or sleeps until data is available
+        # yields chunks of data or sleep until data is available
         def video_stream_or_block():
-            # @todo start at beginning or range?
-            # @todo get torrent block size
+            # @todo start at beginning or range
             # @todo foreach (block): if (downloaded) yield, else sleep
             yield "Hello, "
             yield "world"

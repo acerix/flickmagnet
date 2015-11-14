@@ -45,7 +45,7 @@ def start(settings, db_connect):
 
         # start by adding Wizard of Oz, a demo video that works right away
         crawl_imdb_title(settings, db, 16544)
-        os._exit(0) # dont actually start
+        #os._exit(0) # dont actually start
 
         # add imdb's public domain movies
         for url in imdb_list_urls:

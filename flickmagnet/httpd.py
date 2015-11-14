@@ -174,7 +174,7 @@ WHERE
         location = 'http://%s:%d/stream?magnet_file_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], magnet_file_id)
 
         # @todo actual duration
-        duration = 69
+        duration = 0
 
         cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
         cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flick.xspf"'
@@ -223,10 +223,10 @@ WHERE
             print('waiting for video to start downloading')
             time.sleep(n)
 
+        return video_filename
+
 
         cherrypy.response.headers['Content-Type'] = 'video/mpeg'
-
-        # @todo "The requested resource returned more bytes than the declared Content-Length" ... libtorrent not pre-allocating?
         cherrypy.response.headers['Content-Length'] = os.path.getsize(video_filename)
 
         # @todo need to accept ranges so video players can seek
@@ -234,7 +234,8 @@ WHERE
 
         file_object = open(video_filename, 'rb')
 
-        # if download is complete, output the file contents all at once (@todo is there a way to return as static file?)
+        # if download is complete, output the file contents all at once
+        # @todo is there a way to return as static file?
         #if (torrent_status.is_seeding):
         return file_object.read()
 
@@ -259,7 +260,8 @@ def start(settings, db_connect):
 
     cherrypy.config.update({
         'server.socket_host': settings['http_addr'],
-        'server.socket_port': settings['http_port']
+        'server.socket_port': settings['http_port'],
+        'engine.autoreload.on': False
     })
 
     cherrypy.server.socket_host = settings['http_addr']

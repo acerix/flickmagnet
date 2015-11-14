@@ -7,6 +7,8 @@ import sys
 
 import binascii
 
+from operator import attrgetter
+
 status_names = ['queued', 'checking', 'downloading metadata', 'downloading', 'finished', 'seeding', 'allocating']
 
 dht_routers = [
@@ -84,6 +86,7 @@ def start(settings, db_connect, save_path):
 
         for torrent_handle in session_handle.get_torrents():
 
+            print()
             print('status of torrent:', torrent_handle.info_hash())
 
             # dht_settings = session_handle.get_settings()
@@ -97,6 +100,8 @@ def start(settings, db_connect, save_path):
                 'state: ', status_names[torrent_status.state]
 
             )
+
+
 
         # print('trackers: ', torrent_handle.trackers())
 
@@ -119,7 +124,13 @@ def start(settings, db_connect, save_path):
 
 
 # start downloading the torrent file immediately, with highest priority, starting at the byte_offset
-def start_streaming_magnet_file(session_handle, save_path, btih, video_filename, byte_offset=0):
+def start_streaming_magnet_file(session_handle, save_path, btih, video_filename, magnet_file_id, db, byte_offset=0):
+
+    # stop any other torrents
+    # @todo only stop torrents for this user
+    for torrent_handle in session_handle.get_torrents():
+        torrent_handle.pause()
+
 
     # can't get add_torrent to work with infohash
     #
@@ -134,7 +145,8 @@ def start_streaming_magnet_file(session_handle, save_path, btih, video_filename,
     # putting it in a magnet URL works
     torrent_handle = session_handle.add_torrent({
         'save_path': save_path,
-        'url': 'magnet:?xt=urn:btih:' + btih
+        'url': 'magnet:?xt=urn:btih:' + btih,
+        'storage_mode': libtorrent.storage_mode_t.storage_mode_allocate
     })
 
     # add some udp trackers
@@ -145,6 +157,39 @@ def start_streaming_magnet_file(session_handle, save_path, btih, video_filename,
 
     torrent_handle.force_dht_announce()
     torrent_handle.set_sequential_download(True)
+
+
+
+
+    print('waiting for torrent metadata')
+
+    # @todo timeout
+    while torrent_handle.status().state<3:
+        torrent_status = torrent_handle.status()
+        print(status_names[torrent_status.state])
+        time.sleep(3)
+
+    torrent_info = torrent_handle.get_torrent_info()
+
+
+    # assume the biggest file is the video payload
+    # http://libtorrent.org/reference-Storage.html#file-entry
+    biggest_file_entry = max(torrent_info.files(), key=attrgetter('size'))
+
+    dbc = db.execute("""
+UPDATE
+    magnet_file
+SET
+    filename = ?
+WHERE
+    id = ?
+
+""", [
+    biggest_file_entry.path,
+    magnet_file_id
+])
+    db.commit()
+
 
     # @todo only download the specified video_filename, not entire torrent
 
@@ -182,7 +227,7 @@ WHERE
     for r in dbc.fetchall():
         # start watching
         print('start watching')
-        start_streaming_magnet_file(session_handle, save_path, r['btih'], r['filename'], r['stream_position'])
+        start_streaming_magnet_file(session_handle, save_path, r['btih'], r['filename'], r['id'], db, r['stream_position'])
         dbc = db.execute("""
 UPDATE
     magnet_file

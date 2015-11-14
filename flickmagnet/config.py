@@ -75,7 +75,8 @@ torrent_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # test http port or get a random one if not defined
 if 'http_port' in settings['server']:
-    http_sock.bind((settings['server']['http_addr'], settings['server']['http_port']))
+    pass
+    #http_sock.bind((settings['server']['http_addr'], settings['server']['http_port']))
 
 else:
     http_sock.bind((settings['server']['http_addr'], 0))

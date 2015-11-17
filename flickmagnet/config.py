@@ -29,6 +29,14 @@ with open(config_file) as config_file_object:
     settings = toml.load(config_file_object)
 
 
+
+# copy version number to settings
+from version import __version__
+settings['server']['version'] = __version__
+
+
+
+
 # where downloads are stored
 
 settings['server']['download_dir'] = cache_dir

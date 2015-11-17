@@ -20,7 +20,9 @@ def main():
         level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s',
     )
 
-    logging.info('Daemon is starting')
+    logging.info('Starting '+config.settings['server']['name']+' version '+config.settings['server']['version'])
+
+    print('Starting '+config.settings['server']['name']+' '+config.settings['server']['version'])
 
     # start torrentd
     torrentd_pid = os.fork()

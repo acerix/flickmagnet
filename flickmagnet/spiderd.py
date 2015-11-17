@@ -3,15 +3,20 @@
 
 # @todo needs error checking... what happens if offline or if imdb changes something?
 
-# lists of titles on imdb.com
+# lists of titles on imdb.com, these are retrieved on the first run
 imdb_list_urls = [
 
     # public domain movies
     'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc',
-    'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc&start=251',
+    'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc&start=251'
+
+]
+
+# lists of new released on imdb.com updated once a day
+imdb_update_urls = [
 
     # new dvd releases
-    #'http://www.imdb.com/sections/dvd/'
+    'http://www.imdb.com/sections/dvd/'
 
 ]
 
@@ -50,6 +55,11 @@ def start(settings, db_connect):
         # add imdb's public domain movies
         for url in imdb_list_urls:
             crawl_imdb_list(settings, db, url)
+
+
+    # add new dvd releases
+    for url in imdb_update_urls:
+        crawl_imdb_list(settings, db, url)
 
     while True:
         magnetize_new_movies(settings, db)

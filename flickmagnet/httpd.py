@@ -4,6 +4,7 @@ import string
 import time
 
 import cherrypy
+from cherrypy.lib.static import serve_file
 
 # hide debug messages
 cherrypy.log.screen = None
@@ -18,12 +19,25 @@ lookup = TemplateLookup(directories=[templates_dir])
 class RootController:
 
 
-    # index of all content
+    # welcome
 
     @cherrypy.expose
-    def index(self, name=None):
+    def index(self):
+        return lookup.get_template("index.html").render()
 
-        page_template = lookup.get_template("index.html")
+    # search
+
+    @cherrypy.expose
+    def search(self, q=None, tag_id=None):
+        return lookup.get_template("results.html").render(results=[])
+
+
+    # browse movies
+
+    @cherrypy.expose
+    def movies(self):
+
+        page_template = lookup.get_template("movies.html")
 
         dbc = cherrypy.thread_data.db.execute("""
 SELECT
@@ -44,13 +58,26 @@ AND
 )
 ORDER BY
     movie.id DESC
-LIMIT
-    30
 """ % (
     cherrypy.thread_data.settings['cached_tables']['entity_type']['movie']
 ))
 
         new_movies = dbc.fetchall()
+
+        return page_template.render(
+            title = "Movies",
+            movies = new_movies
+        )
+
+
+
+
+    # browse tv shows
+
+    @cherrypy.expose
+    def tv(self):
+
+        page_template = lookup.get_template("tv.html")
 
         dbc = cherrypy.thread_data.db.execute("""
 SELECT
@@ -81,16 +108,13 @@ AND
 )
 ORDER BY
     episode.id DESC
-LIMIT
-    30
 """ % (
     cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
 ))
         new_episodes = dbc.fetchall()
 
         return page_template.render(
-            title = "Index",
-            movies = new_movies,
+            title = "TV Shows",
             episodes = new_episodes
         )
 
@@ -194,7 +218,8 @@ WHERE
 
             dbc = cherrypy.thread_data.db.execute("""
 SELECT
-    *
+    magnet_file.*,
+    4 torrent_status
 FROM
     magnet_file
 WHERE
@@ -232,17 +257,19 @@ WHERE
         # @todo need to accept ranges so video players can seek
         #cherrypy.response.headers['Accept-Ranges'] = 'bytes'
 
-        file_object = open(video_filename, 'rb')
 
-        # if download is complete, output the file contents all at once
-        # @todo is there a way to return as static file?
-        #if (torrent_status.is_seeding):
-        return file_object.read()
+        # if download is complete, output as a static file
+        # if finished or seeding:
+        if magnet_file['torrent_status'] == 4 or magnet_file['torrent_status'] == 5:
+            return serve_file(video_filename, content_type='video/mpeg')
 
         # torrent_handle::file_progress   ?
 
         # switch to streaming mode
         cherrypy.response.stream = True
+
+
+        chunk_size = magnet_file.chunk_size
 
         # yields chunks of data or sleep until data is available
         def video_stream_or_block():

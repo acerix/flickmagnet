@@ -74,6 +74,7 @@ def start(settings, db_connect):
 def crawl_imdb_list(settings, db, url):
 
     response = requests.get(url)
+    print('crawl:',url)
 
     for imdb_id in set(re.findall(r'[^>]href="/title/tt0*(\d+)', response.text)):
         crawl_imdb_title(settings, db, imdb_id)
@@ -83,7 +84,7 @@ def crawl_imdb_list(settings, db, url):
 def crawl_imdb_title(settings, db, imdb_id):
 
     imdb_id = int(imdb_id)
-    #print(imdb_id)
+    print('add movie:',imdb_id)
 
     response = requests.get('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
 
@@ -197,7 +198,7 @@ WHERE
 
         for search_url in search_urls:
 
-            #print(search_url % (r['id']))
+            print(search_url % (r['id']))
 
             results_response = requests.get(search_url % (r['id']))
             #results_soup = BeautifulSoup(results_response.content, 'html.parser')

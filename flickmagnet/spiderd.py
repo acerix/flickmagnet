@@ -42,6 +42,7 @@ from bs4 import BeautifulSoup
 def start(settings, db_connect):
 
     db = db_connect()
+    requests_session = requests.Session()
 
     print('spiderd started')
 
@@ -49,20 +50,20 @@ def start(settings, db_connect):
         print('first run')
 
         # start by adding Wizard of Oz, a demo video that works right away
-        crawl_imdb_title(settings, db, 16544)
+        crawl_imdb_title(settings, db, requests_session, 16544)
         #os._exit(0) # dont actually start
 
         # add imdb's public domain movies
         for url in imdb_list_urls:
-            crawl_imdb_list(settings, db, url)
+            crawl_imdb_list(settings, db, requests_session, url)
 
 
     # add new dvd releases
     for url in imdb_update_urls:
-        crawl_imdb_list(settings, db, url)
+        crawl_imdb_list(settings, db, requests_session, url)
 
     while True:
-        magnetize_new_movies(settings, db)
+        magnetize_new_movies(settings, db, requests_session)
         time.sleep(30)
 
     print('spiderd ended')
@@ -71,22 +72,22 @@ def start(settings, db_connect):
 
 
 # find html links to titles on imdb.com, add them to the database
-def crawl_imdb_list(settings, db, url):
+def crawl_imdb_list(settings, db, requests_session, url):
 
-    response = requests.get(url)
+    response = requests_session.get(url)
     print('crawl:',url)
 
     for imdb_id in set(re.findall(r'[^>]href="/title/tt0*(\d+)', response.text)):
-        crawl_imdb_title(settings, db, imdb_id)
+        crawl_imdb_title(settings, db, requests_session, imdb_id)
 
 
 # get details of the title from imdb.com, add it to the database
-def crawl_imdb_title(settings, db, imdb_id):
+def crawl_imdb_title(settings, db, requests_session, imdb_id):
 
     imdb_id = int(imdb_id)
     print('add movie:',imdb_id)
 
-    response = requests.get('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
+    response = requests_session.get('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
 
     soup = BeautifulSoup(response.content, 'html.parser')
 
@@ -170,7 +171,7 @@ VALUES
     # save thumbnail
     if cover_img_tag:
         cover_img_url = cover_img_tag['src']
-        cover_img_response = requests.get(cover_img_url)
+        cover_img_response = requests_session.get(cover_img_url)
         cover_img_f = open(os.path.join(settings['thumbnail_dir'], str(imdb_id)+'.jpg'), 'wb')
         cover_img_f.write(cover_img_response.content)
         cover_img_f.close()
@@ -178,7 +179,7 @@ VALUES
 
 
 # try to find magnets for newly added movies
-def magnetize_new_movies(settings, db):
+def magnetize_new_movies(settings, db, requests_session):
 
     entity_statuses = settings['cached_tables']['entity_status']
 
@@ -200,7 +201,7 @@ WHERE
 
             print(search_url % (r['id']))
 
-            results_response = requests.get(search_url % (r['id']))
+            results_response = requests_session.get(search_url % (r['id']))
             #results_soup = BeautifulSoup(results_response.content, 'html.parser')
 
             # loop through magnet links

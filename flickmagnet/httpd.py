@@ -260,8 +260,8 @@ WHERE
 
         # if download is complete, output as a static file
         # if finished or seeding:
-        if magnet_file['torrent_status'] == 4 or magnet_file['torrent_status'] == 5:
-            return serve_file(video_filename, content_type='video/mpeg')
+        #if magnet_file['torrent_status'] == 4 or magnet_file['torrent_status'] == 5:
+        return serve_file(video_filename, content_type='video/mpeg')
 
         # torrent_handle::file_progress   ?
 
@@ -269,9 +269,11 @@ WHERE
         cherrypy.response.stream = True
 
 
+
+
         chunk_size = magnet_file.chunk_size
 
-        # yields chunks of data or sleep until data is available
+        # yields chunks of data or sleeps until data is available
         def video_stream_or_block():
             # @todo start at beginning or range
             # @todo foreach (block): if (downloaded) yield, else sleep

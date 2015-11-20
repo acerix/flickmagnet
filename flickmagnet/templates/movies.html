@@ -9,7 +9,12 @@
             <img src="/t/${r['id']}.jpg" alt="">
         </td>
         <td>
-            <h2 style="margin-top:0">${r['name'] | h}</h2>
+            <h2 style="margin-top:0">
+${r['name'] | h}
+% if r['release_year']:
+     (${r['release_year']})
+% endif
+            </h2>
             <p>${r['synopsis'] | h}</p>
         </td>
         <td class="btn-group-vertical" role="group" aria-label="...">

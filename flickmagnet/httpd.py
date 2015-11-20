@@ -28,8 +28,77 @@ class RootController:
     # search
 
     @cherrypy.expose
-    def search(self, q=None, tag_id=None):
-        return lookup.get_template("results.html").render(results=[])
+    def search(self, q=None, tag=[]):
+
+        query = '%'+q+'%'
+
+        dbc = cherrypy.thread_data.db.execute("""
+SELECT
+    'movie' type,
+    movie.id,
+    movie.name,
+    movie.synopsis
+FROM
+    movie
+WHERE
+    movie.name LIKE ?
+AND
+    EXISTS
+(
+SELECT
+    *
+FROM
+    magnet_file
+WHERE
+    magnet_file.entity_type_id = ?
+AND
+    magnet_file.entity_id = movie.id
+)
+
+UNION
+
+SELECT
+    'episode' type,
+    episode.id,
+    series.name || ' S' ||  season.number || ' E' || episode.number name,
+    episode.synopsis
+FROM
+    episode
+JOIN
+    season
+        ON
+            season.id = episode.season_id
+JOIN
+    series
+        ON
+            series.id = season.series_id
+WHERE
+    series.name LIKE ?
+AND
+    EXISTS
+(
+SELECT
+    *
+FROM
+    magnet_file
+WHERE
+    magnet_file.entity_type_id = ?
+AND
+    magnet_file.entity_id = episode.id
+)
+
+ORDER BY
+    id DESC
+""", [
+    query,
+    cherrypy.thread_data.settings['cached_tables']['entity_type']['movie'],
+    query,
+    cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
+])
+
+        results = dbc.fetchall()
+
+        return lookup.get_template("results.html").render(results=results)
 
 
     # browse movies
@@ -263,15 +332,14 @@ WHERE
         #if magnet_file['torrent_status'] == 4 or magnet_file['torrent_status'] == 5:
         return serve_file(video_filename, content_type='video/mpeg')
 
+        # for now, this will never be reached... we just send zeroes to the browser for any parts not downloaded yet
+
         # torrent_handle::file_progress   ?
 
         # switch to streaming mode
         cherrypy.response.stream = True
 
-
-
-
-        chunk_size = magnet_file.chunk_size
+        #chunk_size = magnet_file.chunk_size
 
         # yields chunks of data or sleeps until data is available
         def video_stream_or_block():

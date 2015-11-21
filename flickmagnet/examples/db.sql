@@ -78,7 +78,7 @@ CREATE TABLE "movie" (
     `status_id` INTEGER NOT NULL DEFAULT 1,
     `added` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY(id)
-)
+);
 INSERT INTO `movie` VALUES (16544,'The Wizard of Oz',1925,1,4860,5.3,'Dorothy, heir to the Oz throne, must take it back from the wicked Prime Minister Kruel with the help of three farmhands.',51,'2015-10-26 23:52:07');
 CREATE TABLE "magnet_file_status" (
     `id`    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,

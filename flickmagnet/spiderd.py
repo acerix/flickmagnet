@@ -55,9 +55,10 @@ def start(settings, db_connect):
     if settings['first_run']:
 
         # start by adding Wizard of Oz as a demo that works right away
-        crawl_imdb_title(settings, db, requests_session, 16544)
+        crawl_imdb_title(settings, db, requests_session, 16544, 1)
 
-    # skip existing
+
+    # only spider public domain movies one time
     dbc = db.execute("""
 SELECT
     COUNT(*)

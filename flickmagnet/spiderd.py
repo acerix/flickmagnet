@@ -52,6 +52,10 @@ def start(settings, db_connect):
 
     print('spiderd started')
 
+    if settings['first_run']:
+
+        # start by adding Wizard of Oz as a demo that works right away
+        crawl_imdb_title(settings, db, requests_session, 16544)
 
     # skip existing
     dbc = db.execute("""
@@ -64,12 +68,8 @@ WHERE
 """)
     existing_publicdomain_movie_count = dbc.fetchone()[0]
 
-    #if settings['first_run']:
-    if 0 == existing_publicdomain_movie_count:
+    if existing_publicdomain_movie_count < 2:
         print('Initilializing database with public domain movies from imdb')
-
-        # start by adding Wizard of Oz as a demo that works right away
-        crawl_imdb_title(settings, db, requests_session, 16544)
 
         # add imdb's public domain movies
         for url in imdb_list_urls:

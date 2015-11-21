@@ -31,6 +31,12 @@ search_urls = [
     'https://kat.cr/usearch/imdb%%3A%d/?field=seeders&sorder=desc'
 ]
 
+
+# urls to query for a list of imdb id's for a keyword search query %s
+title_search_urls = [
+    'http://www.imdb.com/find?q=%s'
+]
+
 import os
 import time
 import requests
@@ -46,25 +52,54 @@ def start(settings, db_connect):
 
     print('spiderd started')
 
-    if settings['first_run']:
-        print('first run')
 
-        # start by adding Wizard of Oz, a demo video that works right away
+    # skip existing
+    dbc = db.execute("""
+SELECT
+    COUNT(*)
+FROM
+    movie
+WHERE
+    public_domain = 1
+""")
+    existing_publicdomain_movie_count = dbc.fetchone()[0]
+
+    #if settings['first_run']:
+    if 0 == existing_publicdomain_movie_count:
+        print('Initilializing database with public domain movies from imdb')
+
+        # start by adding Wizard of Oz as a demo that works right away
         crawl_imdb_title(settings, db, requests_session, 16544)
-        #os._exit(0) # dont actually start
 
         # add imdb's public domain movies
         for url in imdb_list_urls:
-            crawl_imdb_list(settings, db, requests_session, url)
+            crawl_imdb_list(settings, db, requests_session, url, 1)
 
 
-    # add new dvd releases
-    for url in imdb_update_urls:
-        crawl_imdb_list(settings, db, requests_session, url)
+    loop_number = 0
 
     while True:
+
+        # every second
+        # @todo running every second find search results faster, but for production it should sleep longer when idle to save resources
+        propagate_queries(settings, db, requests_session)
+
+        # finds magnets for newly added movies
         magnetize_new_movies(settings, db, requests_session)
-        time.sleep(30)
+
+        # every 30 seconds
+        #if 0 == loop_number % 30:
+
+        # every 12 hours
+        if 0 == loop_number % 43200:
+
+            # add new dvd releases
+            for url in imdb_update_urls:
+                crawl_imdb_list(settings, db, requests_session, url)
+
+
+        time.sleep(1)
+        loop_number += 1
 
     print('spiderd ended')
 
@@ -72,20 +107,37 @@ def start(settings, db_connect):
 
 
 # find html links to titles on imdb.com, add them to the database
-def crawl_imdb_list(settings, db, requests_session, url):
+def crawl_imdb_list(settings, db, requests_session, url, public_domain=0):
 
     response = requests_session.get(url)
     print('crawl:',url)
 
     for imdb_id in set(re.findall(r'[^>]href="/title/tt0*(\d+)', response.text)):
-        crawl_imdb_title(settings, db, requests_session, imdb_id)
+        crawl_imdb_title(settings, db, requests_session, imdb_id, public_domain)
 
 
 # get details of the title from imdb.com, add it to the database
-def crawl_imdb_title(settings, db, requests_session, imdb_id):
+def crawl_imdb_title(settings, db, requests_session, imdb_id, public_domain=0):
 
     imdb_id = int(imdb_id)
-    print('add movie:',imdb_id)
+
+    # skip existing
+    dbc = db.execute("""
+SELECT
+    *
+FROM
+    movie
+WHERE
+    id = %d
+""" % (
+    imdb_id
+))
+    movie = dbc.fetchone()
+
+    if movie is not None:
+        return
+
+    print('add movie:', imdb_id)
 
     response = requests_session.get('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
 
@@ -98,7 +150,7 @@ def crawl_imdb_title(settings, db, requests_session, imdb_id):
     title_tag = soup.title
     title_tag_match = re.match(r'(.*) \([^)]*(\d{4})[^)]*\) - IMDb', title_tag.string)
 
-    if title_tag_match.group(1) is None:
+    if title_tag_match is None or title_tag_match.group(1) is None:
         return False
     title = title_tag_match.group(1)
 
@@ -136,10 +188,12 @@ INSERT OR REPLACE INTO
     release_year,
     seconds_long,
     rating,
-    synopsis
+    synopsis,
+    public_domain
 )
 VALUES
 (
+    ?,
     ?,
     ?,
     ?,
@@ -153,28 +207,31 @@ VALUES
     release_year,
     minutes_long * 60,
     rating,
-    synopsis
+    synopsis,
+    public_domain
 ])
     db.commit()
 
 
+    # cover image
+    cover_image_filename = os.path.join(settings['thumbnail_dir'], str(imdb_id)+'.jpg')
 
-    # find cover image
+    if not os.path.exists(cover_image_filename):
 
-    # small
-    cover_img_tag = soup.select_one('img[width="214"]')
+        # small
+        cover_img_tag = soup.select_one('img[width="214"]')
 
-    # large
-    #cover_img_tag = soup.select_one('meta[property="og:image"]')
-    #cover_img_url = cover_img_tag['content']
+        # large
+        #cover_img_tag = soup.select_one('meta[property="og:image"]')
+        #cover_img_url = cover_img_tag['content']
 
-    # save thumbnail
-    if cover_img_tag:
-        cover_img_url = cover_img_tag['src']
-        cover_img_response = requests_session.get(cover_img_url)
-        cover_img_f = open(os.path.join(settings['thumbnail_dir'], str(imdb_id)+'.jpg'), 'wb')
-        cover_img_f.write(cover_img_response.content)
-        cover_img_f.close()
+        # save thumbnail
+        if cover_img_tag:
+            cover_img_url = cover_img_tag['src']
+            cover_img_response = requests_session.get(cover_img_url)
+            cover_img_f = open(cover_image_filename, 'wb')
+            cover_img_f.write(cover_img_response.content)
+            cover_img_f.close()
 
 
 
@@ -292,3 +349,68 @@ WHERE
     r['id']
 ))
         db.commit()
+
+
+# lookup recent search terms and add matching imdb titles
+def propagate_queries(settings, db, requests_session):
+    #print('propagate')
+
+    entity_statuses = settings['cached_tables']['entity_status']
+
+    # find new movies
+    dbc = db.execute("""
+SELECT
+    *
+FROM
+    search_query
+WHERE
+    status_id = 1
+""")
+    for r in dbc.fetchall():
+
+        db.execute("""
+UPDATE
+    search_query
+SET
+    status_id = 50
+WHERE
+    id = %d
+""" % (
+    r['id']
+))
+        db.commit()
+
+        for title_search_url in title_search_urls:
+
+            titles_found = 0
+
+            print(title_search_url % r['query'])
+
+            results_response = requests_session.get(title_search_url % r['query'])
+
+            # loop through imdb id's
+            for imdb_id in set(re.findall(r'/title/tt([0-9]{1,7})', results_response.text)):
+
+                imdb_id = int(imdb_id)
+
+                #print(imdb_id)
+
+                crawl_imdb_title(settings, db, requests_session, imdb_id)
+
+                titles_found += 1
+
+
+
+        db.execute("""
+UPDATE
+    search_query
+SET
+    status_id = %d
+WHERE
+    id = %d
+""" % (
+    51 if titles_found else 52,
+    r['id']
+))
+        db.commit()
+

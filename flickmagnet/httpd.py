@@ -2,6 +2,7 @@ import os, os.path
 import random
 import string
 import time
+from datetime import date
 
 import cherrypy
 from cherrypy.lib.static import serve_file
@@ -30,9 +31,91 @@ class RootController:
     @cherrypy.expose
     def search(self, q=None, tag=[]):
 
-        query = '%'+q+'%'
+        sql_movie_filter = sql_episode_filter = "1"
+
+        query_params = {
+            'type_id_movie': cherrypy.thread_data.settings['cached_tables']['entity_type']['movie'],
+            'type_id_episode': cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
+        }
+
+        deep_search_running = False
+
+        if q is not None and len(q):
+
+            # tell spiderd to find titles with this match
+            dbc = cherrypy.thread_data.db.execute("""
+SELECT
+    *
+FROM
+    search_query
+WHERE
+    query = ?
+""", [
+    q
+])
+            cherrypy.thread_data.db.commit()
+
+            # first time query, spider it
+            if dbc.fetchone() is None:
+
+                deep_search_running = True
+
+                # tell spiderd to find titles with this match
+                cherrypy.thread_data.db.execute("""
+INSERT OR IGNORE INTO
+    search_query
+(
+    query
+)
+VALUES
+(
+    ?
+)
+""", [
+    q
+    ])
+                cherrypy.thread_data.db.commit()
+
+            query = '%'+q+'%'
+            sql_movie_filter += " AND movie.name LIKE :query "
+            sql_episode_filter += " AND series.name LIKE :query "
+            query_params['query'] = query
+
+        # for one tag, convert to list so it's the same as multiple tags
+        if isinstance(tag, str):
+            tag = [tag]
+
+        if isinstance(tag, list) and len(tag):
+            for k,v in enumerate(tag):
+                sql_movie_filter += """
+    AND EXISTS
+(
+SELECT
+    *
+FROM
+    movie_tag
+JOIN
+    tag
+        ON
+            tag.id = movie_tag.tag_id
+        AND
+            tag.name = :tag_"""+str(k)+"""_name
+WHERE
+    movie_tag.movie_id = movie.id
+)
+"""
+                query_params['tag_'+str(k)+'_name'] = v
 
         dbc = cherrypy.thread_data.db.execute("""
+SELECT
+    type,
+    id,
+    name,
+    synopsis
+FROM
+
+(
+
 SELECT
     'movie' type,
     movie.id,
@@ -41,7 +124,7 @@ SELECT
 FROM
     movie
 WHERE
-    movie.name LIKE ?
+    """ + sql_movie_filter + """
 AND
     EXISTS
 (
@@ -50,7 +133,7 @@ SELECT
 FROM
     magnet_file
 WHERE
-    magnet_file.entity_type_id = ?
+    magnet_file.entity_type_id = :type_id_movie
 AND
     magnet_file.entity_id = movie.id
 )
@@ -73,7 +156,7 @@ JOIN
         ON
             series.id = season.series_id
 WHERE
-    series.name LIKE ?
+    """ + sql_episode_filter + """
 AND
     EXISTS
 (
@@ -82,23 +165,20 @@ SELECT
 FROM
     magnet_file
 WHERE
-    magnet_file.entity_type_id = ?
+    magnet_file.entity_type_id = :type_id_episode
 AND
     magnet_file.entity_id = episode.id
 )
 
+)
+
 ORDER BY
     id DESC
-""", [
-    query,
-    cherrypy.thread_data.settings['cached_tables']['entity_type']['movie'],
-    query,
-    cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
-])
+""", query_params)
 
         results = dbc.fetchall()
 
-        return lookup.get_template("results.html").render(results=results)
+        return lookup.get_template("results.html").render(results=results, deep_search_running=deep_search_running)
 
 
     # browse movies
@@ -114,6 +194,12 @@ SELECT
 FROM
     movie
 WHERE
+(
+    movie.release_year < %d
+OR
+    movie.public_domain = 1
+)
+AND
     EXISTS
 (
 SELECT
@@ -128,6 +214,7 @@ AND
 ORDER BY
     movie.id DESC
 """ % (
+    date.today().year + 1 - cherrypy.thread_data.settings['copyright_length'],
     cherrypy.thread_data.settings['cached_tables']['entity_type']['movie']
 ))
 
@@ -323,14 +410,17 @@ WHERE
         cherrypy.response.headers['Content-Type'] = 'video/mpeg'
         cherrypy.response.headers['Content-Length'] = os.path.getsize(video_filename)
 
-        # @todo need to accept ranges so video players can seek
-        #cherrypy.response.headers['Accept-Ranges'] = 'bytes'
-
 
         # if download is complete, output as a static file
         # if finished or seeding:
         #if magnet_file['torrent_status'] == 4 or magnet_file['torrent_status'] == 5:
         return serve_file(video_filename, content_type='video/mpeg')
+
+
+
+        # @todo need to accept ranges so video players can seek
+        #cherrypy.response.headers['Accept-Ranges'] = 'bytes'
+
 
         # for now, this will never be reached... we just send zeroes to the browser for any parts not downloaded yet
 

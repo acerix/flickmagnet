@@ -6,18 +6,18 @@
 % for r in results:
     <tr>
         <td>
-            <img src="/t/${r[1]}.jpg" alt="">
+            <img src="/t/${r['id']}.jpg" alt="">
         </td>
         <td>
-            <h2 style="margin-top:0">${r[2] | h}</h2>
-            <p>${r[2] | h}</p>
+            <h2 style="margin-top:0">${r['name'] | h}</h2>
+            <p>${r['synopsis'] | h}</p>
         </td>
         <td class="btn-group-vertical" role="group" aria-label="...">
-            <a class="btn btn-default" href="http://www.imdb.com/title/tt${'{0:07d}'.format(r[1])}/" target="_blank">
+            <a class="btn btn-default" href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}/" target="_blank">
                 IMDB
                 <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
             </a>
-            <a class="btn btn-success" href="/play?entity_type=movie&amp;entity_id=${r[1]}" target="_blank">
+            <a class="btn btn-success" href="/play?entity_type=movie&amp;entity_id=${r['id']}" target="_blank">
                 Play
                 <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
             </a>
@@ -25,5 +25,14 @@
     </tr>
 % endfor
 </table>
+
+% if deep_search_running:
+<div class="panel panel-warning">
+  <div class="panel-body">
+    <p>Deep search started, results will be updated in 30 seconds...</p>
+  </div>
+</div>
+<meta http-equiv="refresh" content="25">
+% endif
 
 </div>

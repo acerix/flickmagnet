@@ -58,14 +58,9 @@ def start(settings, db_connect):
 
     print('spiderd started')
 
-    #simpsons test
-    crawl_imdb_title(settings, db, requests_session, 96697, 1, True)
-    return
-
     while not internet_works(requests_session):
         print('spiderd: error connecting to Internet, trying again in 60 seconds')
         time.sleep(60)
-
 
     if settings['first_run']:
 
@@ -392,14 +387,14 @@ def magnetize_new_movies(settings, db, requests_session):
     # find new movies
     dbc = db.execute("""
 SELECT
-    *
+    id
 FROM
     movie
 WHERE
-    movie.status_id = %d
-""" % (
-    entity_statuses['new']
-))
+    movie.status_id = :status_id
+""", {
+    'status_id': entity_statuses['new']
+})
     for r in dbc.fetchall():
         magnets_found = 0
 

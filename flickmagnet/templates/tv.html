@@ -11,7 +11,7 @@
             ${r['series_name'] | h}
         </td>
         <td>
-            ${'S{0:02d}E{0:02d}'.format(r['season_number'], r['number'])}
+            ${'S{0:02d}E{1:02d}'.format(r['season_number'], r['number'])}
         </td>
         <td>
             ${r['synopsis'] | h}

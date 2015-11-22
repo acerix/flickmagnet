@@ -58,6 +58,10 @@ def start(settings, db_connect):
 
     print('spiderd started')
 
+    #simpsons test
+    crawl_imdb_title(settings, db, requests_session, 96697, 1, True)
+    return
+
     while not internet_works(requests_session):
         print('spiderd: error connecting to Internet, trying again in 60 seconds')
         time.sleep(60)
@@ -144,28 +148,47 @@ def crawl_imdb_title(settings, db, requests_session, imdb_id, public_domain=0, r
     # skip existing
     dbc = db.execute("""
 SELECT
-    *
+    id
 FROM
     movie
 WHERE
-    id = %d
-""" % (
-    imdb_id
-))
-    movie = dbc.fetchone()
+    id = :imdb_id
+UNION
+SELECT
+    id
+FROM
+    series
+WHERE
+    id = :imdb_id
+UNION
+SELECT
+    id
+FROM
+    episode
+WHERE
+    id = :imdb_id
+""", {
+    'imdb_id': imdb_id
+})
+    existing_entity = dbc.fetchone()
 
-    if movie is not None and not replace_existing:
+    if existing_entity is not None and not replace_existing:
         return
 
-    print('add movie:', imdb_id)
-    print('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
+    print('add imdb id:', imdb_id)
 
     response = requests_session.get('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
 
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    # @todo handle titles which are not movies
+    # default to movie
     entity_type = 'movie'
+
+    # if this is a tv series, find latest season
+    latest_season_tag = soup.select_one('div.seasons-and-year-nav > div:nth-of-type(3) > a')
+    if latest_season_tag:
+        entity_type = 'series'
+        latest_season = int(latest_season_tag.string)
 
     # find title, year
     title_tag = soup.title
@@ -200,7 +223,9 @@ WHERE
     synopsis_tag = soup.select_one('p[itemprop="description"]')
     synopsis = synopsis_tag.string.strip() if synopsis_tag.string else ""
 
-    db.execute("""
+
+    if 'movie'==entity_type:
+        db.execute("""
 INSERT OR REPLACE INTO
     """+entity_type+"""
 (
@@ -231,7 +256,86 @@ VALUES
     synopsis,
     public_domain
 ])
+
+
+    if 'series'==entity_type:
+        db.execute("""
+INSERT OR REPLACE INTO
+    """+entity_type+"""
+(
+    id,
+    name,
+    rating,
+    synopsis
+)
+VALUES
+(
+    ?,
+    ?,
+    ?,
+    ?
+)
+""", [
+    imdb_id,
+    title,
+    rating,
+    synopsis
+])
+
     db.commit()
+
+
+    if 'series'==entity_type:
+        for season_number in range(1, latest_season):
+            print ('season', season_number)
+            dbc = db.execute("""
+INSERT OR IGNORE INTO
+    season
+(
+    series_id,
+    number
+)
+VALUES
+(
+    ?,
+    ?
+)
+""", [
+    imdb_id,
+    season_number
+])
+            db.commit()
+
+            season_id = dbc.lastrowid
+
+            season_response = requests_session.get('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/episodes?season='+str(season_number))
+
+            season_soup = BeautifulSoup(season_response.content, 'html.parser')
+
+            # find episodes for this season
+            for episode_url in season_soup.select('div.eplist > div.list_item > div.image > a'):
+
+                episode_imdb_id_match = re.match(r'/title/tt0*(\d+)/\?ref_=ttep_ep(\d+)', episode_url['href'])
+                db.execute("""
+INSERT OR IGNORE INTO
+    episode
+(
+    id,
+    season_id,
+    number
+)
+VALUES
+(
+    ?,
+    ?,
+    ?
+)
+""", [
+    episode_imdb_id_match.group(1),
+    season_id,
+    episode_imdb_id_match.group(2)
+])
+            db.commit()
 
     entity_id = str(imdb_id)
 

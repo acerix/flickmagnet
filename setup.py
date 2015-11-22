@@ -12,13 +12,16 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+# Single-sourced version number
+# https://packaging.python.org/en/latest/single_source_version.html
+version = {}
+with open('./flickmagnet/version.py') as fp:
+    exec(fp.read(), version)
+
 setup(
     name='flickmagnet',
 
-    # Versions should comply with PEP440.  For a discussion on single-sourcing
-    # the version across setup.py and the project code, see
-    # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.0.3',
+    version=version['__version__'],
 
     description='HTTP server similar to Netflix and PopcornTime which streams public domain videos from torrent files',
     keywords='netflix streaming movie tv',
@@ -60,11 +63,12 @@ setup(
         'mako',
         'requests',
         'beautifulsoup4',
-        'python-libtorrent',
+        #'python-libtorrent',
     ],
 
-    dependency_links = [
-        'http://sourceforge.net/projects/libtorrent/files/latest/download#egg=python-libtorrent',
-    ],
+    # dosn't work nicely, better to install py-libtorrent separately
+    #dependency_links = [
+    #    'http://sourceforge.net/projects/libtorrent/files/latest/download#egg=python-libtorrent',
+    #],
 
 )

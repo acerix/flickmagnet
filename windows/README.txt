@@ -13,11 +13,9 @@ Install py-libtorrent
 
     http://sourceforge.net/projects/libtorrent/files/py-libtorrent/
 
-Install pip-Win (optional, makes installing pips easier)
-
-    https://sites.google.com/site/pydatalog/python/pip-for-windows
-
 Install PyInstaller with pip
+
+    pip install pyinstaller
 
     http://www.pyinstaller.org/
 

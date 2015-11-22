@@ -111,6 +111,7 @@ SELECT
     type,
     id,
     name,
+    release_year,
     synopsis
 FROM
 
@@ -120,6 +121,7 @@ SELECT
     'movie' type,
     movie.id,
     movie.name,
+    movie.release_year,
     movie.synopsis
 FROM
     movie
@@ -144,6 +146,7 @@ SELECT
     'episode' type,
     episode.id,
     series.name || ' S' ||  season.number || ' E' || episode.number name,
+    NULL release_year,
     episode.synopsis
 FROM
     episode
@@ -404,8 +407,6 @@ WHERE
             print('waiting for video to start downloading')
             time.sleep(n)
 
-        #return video_filename
-
 
         cherrypy.response.headers['Content-Type'] = 'video/mpeg'
         cherrypy.response.headers['Content-Length'] = os.path.getsize(video_filename)
@@ -485,7 +486,6 @@ def start(settings, db_connect):
             '/': {
                 #'tools.sessions.on': True,
                 'tools.staticdir.on': True,
-                #'tools.staticdir.root': ht_dir,
                 'tools.staticdir.dir': ht_dir
             },
             '/t': {

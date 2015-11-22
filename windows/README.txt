@@ -1,11 +1,23 @@
 =  Flick Magnet Installer for Windows =
 
-Instructions for building the Installer for Windows.
 
-== Dependencies ==
- * PyInstaller: http://www.pyinstaller.org/
+Install Visual C++
 
-== Build Steps ==
+    (not free)
 
- 1.  Build and Install Flick Magnet on Windows
+Install Python 3
+
+    https://www.python.org/downloads/windows/
+
+Install py-libtorrent
+
+    http://sourceforge.net/projects/libtorrent/files/py-libtorrent/
+
+Install pip-Win (optional, makes installing pips easier)
+
+    https://sites.google.com/site/pydatalog/python/pip-for-windows
+
+Install PyInstaller with pip
+
+    http://www.pyinstaller.org/
 

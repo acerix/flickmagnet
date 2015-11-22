@@ -44,6 +44,12 @@ import re
 import urllib
 from bs4 import BeautifulSoup
 
+# returns true if the Internet is working
+def internet_works(requests_session):
+    response = requests_session.get('http://flickmag.net/')
+    return len(response.text) > 0
+
+
 
 def start(settings, db_connect):
 
@@ -52,10 +58,16 @@ def start(settings, db_connect):
 
     print('spiderd started')
 
+    while not internet_works(requests_session):
+        print('spiderd: error connecting to Internet, trying again in 60 seconds')
+        time.sleep(60)
+
+
     if settings['first_run']:
 
         # start by adding Wizard of Oz as a demo that works right away
-        crawl_imdb_title(settings, db, requests_session, 16544, 1)
+        crawl_imdb_title(settings, db, requests_session, 16544, 1, True)
+
 
 
     # only spider public domain movies one time
@@ -70,16 +82,18 @@ WHERE
     existing_publicdomain_movie_count = dbc.fetchone()[0]
 
     if existing_publicdomain_movie_count < 2:
-        print('Initilializing database with public domain movies from imdb')
 
-        # add imdb's public domain movies
-        for url in imdb_list_urls:
-            crawl_imdb_list(settings, db, requests_session, url, 1)
+        # add imdb's public domain movies in a new process
+        spiderd_pid = os.fork()
+        if spiderd_pid == 0:
+            crawl_public_domain_movies(settings, db, requests.Session())
+            os._exit(0)
 
 
     loop_number = 0
 
     while True:
+
 
         # every second
         # @todo running every second find search results faster, but for production it should sleep longer when idle to save resources
@@ -89,7 +103,12 @@ WHERE
         magnetize_new_movies(settings, db, requests_session)
 
         # every 30 seconds
-        #if 0 == loop_number % 30:
+        if 0 == loop_number % 30:
+
+            if not internet_works(requests_session):
+                print('spiderd: lost connection to Internet, sleeping for 10 minutes')
+                time.sleep(600)
+
 
         # every 12 hours
         if 0 == loop_number % 43200:
@@ -118,7 +137,7 @@ def crawl_imdb_list(settings, db, requests_session, url, public_domain=0):
 
 
 # get details of the title from imdb.com, add it to the database
-def crawl_imdb_title(settings, db, requests_session, imdb_id, public_domain=0):
+def crawl_imdb_title(settings, db, requests_session, imdb_id, public_domain=0, replace_existing=False):
 
     imdb_id = int(imdb_id)
 
@@ -135,10 +154,11 @@ WHERE
 ))
     movie = dbc.fetchone()
 
-    if movie is not None:
+    if movie is not None and not replace_existing:
         return
 
     print('add movie:', imdb_id)
+    print('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
 
     response = requests_session.get('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
 
@@ -212,6 +232,30 @@ VALUES
     public_domain
 ])
     db.commit()
+
+    entity_id = str(imdb_id)
+
+    # find and add genres
+    for genre in soup.select('span[itemprop="genre"]'):
+        db.execute("""
+INSERT OR IGNORE INTO
+    """+entity_type+"""_tag
+(
+    """+entity_type+"""_id,
+    tag_id
+)
+VALUES
+(
+    ?,
+    (SELECT id FROM tag WHERE name = ?)
+)
+""", [
+    entity_id,
+    genre.string
+])
+        db.commit()
+
+
 
 
     # cover image
@@ -415,3 +459,15 @@ WHERE
 ))
         db.commit()
 
+
+
+
+
+
+# crawl public domain movies from imdb
+def crawl_public_domain_movies(settings, db, requests_session):
+
+    print('Initilializing database with public domain movies from imdb')
+
+    for url in imdb_list_urls:
+        crawl_imdb_list(settings, db, requests_session, url, 1)

@@ -8,7 +8,6 @@ app_name = 'flickmagnet'
 
 
 
-
 # define filesystem paths
 
 from xdg import BaseDirectory

@@ -1,5 +1,6 @@
 
 import os
+import math
 import shutil
 import pytoml as toml
 import socket
@@ -54,6 +55,12 @@ if not os.path.exists(settings['server']['thumbnail_dir']):
     os.makedirs(settings['server']['thumbnail_dir'])
 
 
+# file to store libtorrent state
+
+settings['server']['libtorrent_state_file'] = os.path.join(cache_dir, 'libtorrent_state_file.tmp')
+
+
+
 
 # get a host name if not defined
 if 'http_host' not in settings['server']:
@@ -102,6 +109,11 @@ http_sock.close()
 torrent_sock.close()
 
 
+
+
+# default number of days to keep videos is number of free gigabytes in download dir, rounded up
+if 'video_cache_days' not in settings['server']:
+    settings['server']['video_cache_days'] = math.ceil(os.statvfs(settings['server']['download_dir']).f_bavail / 1048576)
 
 # database just initialized?
 settings['server']['first_run'] = False

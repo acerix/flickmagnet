@@ -14,6 +14,10 @@ preferred_quality = 720
 # copyright_length = 75  # US
 copyright_length = -2   # disabled
 
+# Old videos are deleted if they are not watched for this many days
+# Defaults to number of gigabytes free space
+# video_cache_days = 7
+
 # Port to listen for HTTP clients, defaults to a random port
 http_port = 42000
 

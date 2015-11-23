@@ -4,6 +4,7 @@ import time
 
 import libtorrent
 import sys
+import re
 
 import binascii
 
@@ -34,6 +35,14 @@ import inspect
 
 
 
+def save_state(settings, session_handle):
+
+    # save state
+    with open(settings['libtorrent_state_file'], 'wb') as state_file:
+        state_file.write(libtorrent.bencode(session_handle.save_state()))
+
+
+
 def start(settings, db_connect, save_path):
 
     magnet_statuses = settings['cached_tables']['magnet_file_status']
@@ -42,6 +51,14 @@ def start(settings, db_connect, save_path):
     session_handle = libtorrent.session()
 
     # print(session_handle.get_settings)
+
+    # load previous state
+    if os.path.isfile(settings['libtorrent_state_file']):
+        with open(settings['libtorrent_state_file'], 'rb') as state_file:
+            session_handle.load_state(
+                libtorrent.bdecode(state_file.read())
+            )
+
 
     # listen
     print('torrentd starting on port', settings['torrent_port'])
@@ -110,7 +127,11 @@ def start(settings, db_connect, save_path):
 
         process_queue(session_handle, save_path, db_connect(), magnet_statuses)
 
+        save_state(settings, session_handle)
+
         time.sleep(3)
+
+    save_state(settings, session_handle)
 
     # exit instead of returning to parent process
     os._exit(0)
@@ -172,11 +193,95 @@ def start_streaming_magnet_file(session_handle, save_path, btih, video_filename,
     torrent_info = torrent_handle.get_torrent_info()
 
 
-    # assume the biggest file is the video payload
-    # http://libtorrent.org/reference-Storage.html#file-entry
-    biggest_file_entry = max(torrent_info.files(), key=attrgetter('size'))
-
+    # get magnet file info
     dbc = db.execute("""
+SELECT
+    *
+FROM
+    magnet_file
+WHERE
+    id = ?
+
+""", [
+    magnet_file_id
+])
+    magnet_file = dbc.fetchone()
+
+    print('waiting for torrent metadata')
+
+    # tv episode
+    if 1 == magnet_file['entity_type_id']:
+
+        print('tv')
+
+        for f in torrent_info.files():
+
+            # if a file is less than 10 MB, don't give a fuck
+            if f.size < 10485760:
+                continue;
+
+
+            #print(f.path)
+
+            se = re.search(r's(?:eason)? ?(\d{1,2}).*e(?:pisode)? ?(\d{1,2})', f.path, flags=re.IGNORECASE)
+
+            if se is None:
+                print('no match')
+                continue
+
+            season_number = int(se.group(1))
+            episode_number = int(se.group(2))
+
+            dbc = db.execute("""
+SELECT
+    episode.id
+FROM
+    episode
+JOIN
+    season
+        ON
+            season.id = episode.season_id
+JOIN
+    episode sibling
+        ON
+            sibling.season_id = season.id
+WHERE
+    episode.number = ?
+AND
+    season.number = ?
+AND
+    sibling.id = ?
+""", [
+    episode_number,
+    season_number,
+    magnet_file['entity_id']
+])
+            episode = dbc.fetchone()
+
+            dbc = db.execute("""
+UPDATE
+    magnet_file
+SET
+    filename = ?
+WHERE
+    entity_type_id = 1 AND entity_id = ?
+""", [
+    f.path,
+    episode['id']
+])
+            db.commit()
+
+
+    # movie
+    if 2 == magnet_file['entity_type_id']:
+
+        #print('movie')
+
+        # assume the biggest file is the video payload
+        # http://libtorrent.org/reference-Storage.html#file-entry
+        biggest_file_entry = max(torrent_info.files(), key=attrgetter('size'))
+
+        dbc = db.execute("""
 UPDATE
     magnet_file
 SET
@@ -188,7 +293,9 @@ WHERE
     biggest_file_entry.path,
     magnet_file_id
 ])
-    db.commit()
+        db.commit()
+
+
 
 
     # @todo only download the specified video_filename, not entire torrent
@@ -197,10 +304,9 @@ WHERE
 
     # @todo stop any other downloads
 
-    #torrent_status = torrent_handle.status()
+    # torrent_status = torrent_handle.status()
 
-
-
+    # @todo delete videos older than video_cache_days or not defined in a magnet_file
 
 
 
@@ -228,6 +334,7 @@ WHERE
         # start watching
         print('start watching')
         start_streaming_magnet_file(session_handle, save_path, r['btih'], r['filename'], r['id'], db, r['stream_position'])
+
         dbc = db.execute("""
 UPDATE
     magnet_file

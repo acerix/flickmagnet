@@ -31,6 +31,10 @@ search_urls = [
     'https://kat.cr/usearch/imdb%%3A%d/?field=seeders&sorder=desc'
 ]
 
+# urls to query for a list of magnets/torrents based on tv series name and season number
+season_search_urls = [
+    'https://kat.cr/usearch/%s%%20season%%20%d/?field=seeders&sorder=desc'
+]
 
 # urls to query for a list of imdb id's for a keyword search query %s
 title_search_urls = [
@@ -97,6 +101,9 @@ WHERE
         # every second
         # @todo running every second find search results faster, but for production it should sleep longer when idle to save resources
         propagate_queries(settings, db, requests_session)
+
+        # finds magnets for newly added episodes
+        magnetize_new_episodes(settings, db, requests_session)
 
         # finds magnets for newly added movies
         magnetize_new_movies(settings, db, requests_session)
@@ -183,7 +190,10 @@ WHERE
     latest_season_tag = soup.select_one('div.seasons-and-year-nav > div:nth-of-type(3) > a')
     if latest_season_tag:
         entity_type = 'series'
-        latest_season = int(latest_season_tag.string)
+        if 'Unknown' == latest_season_tag.string:
+            latest_season = 0
+        else:
+            latest_season = int(latest_season_tag.string)
 
     # find title, year
     title_tag = soup.title
@@ -493,6 +503,143 @@ WHERE
     r['id']
 ))
         db.commit()
+
+
+
+# try to find magnets for newly added tv episodes
+def magnetize_new_episodes(settings, db, requests_session):
+
+    entity_statuses = settings['cached_tables']['entity_status']
+
+    # find new episode
+    dbc = db.execute("""
+SELECT
+    episode.id
+    ,episode.number
+    ,season.id season_id
+    ,season.number season_number
+    ,series.name series_name
+FROM
+    episode
+JOIN
+    season
+        ON
+            season.id = episode.season_id
+JOIN
+    series
+        ON
+            series.id = season.series_id
+WHERE
+    episode.status_id = :status_id
+""", {
+    'status_id': entity_statuses['new']
+})
+    for r in dbc.fetchall():
+
+        magnets_found = 0
+
+        for search_url in season_search_urls:
+
+            results_response = requests_session.get(search_url % (urllib.parse.quote(r['series_name']), r['season_number']))
+
+            # loop through magnet links
+            for btih in set(re.findall(r'btih:([0-9a-fA-F]{40})', results_response.text)):
+
+                btih = btih.upper()
+
+                #print(btih)
+
+                # add magnet
+                db.execute("""
+INSERT OR IGNORE INTO
+    magnet
+(
+    btih
+)
+VALUES
+(
+    '%s'
+)
+""" % (
+    btih
+))
+                db.commit()
+
+                # lookup magnet id
+                dbc = db.execute("""
+SELECT
+    id
+FROM
+    magnet
+WHERE
+    btih = '%s'
+""" % (
+    btih
+))
+
+                magnet = dbc.fetchone()
+
+                # why is this sometimes None?
+                if magnet is not None:
+
+                    # add magnet files
+                    db.execute("""
+INSERT INTO
+    magnet_file
+(
+    person_id,
+    quality,
+    filename,
+    entity_type_id,
+    entity_id,
+    magnet_id
+)
+
+SELECT
+    0 person_id,
+    0 quality,
+    '' filename,
+    1 entity_type_id,
+    episode.id entity_id,
+    %d magnet_id
+FROM
+    episode
+WHERE
+    episode.season_id = %d
+""" % (
+    magnet['id'],
+    r['season_id']
+))
+
+                    db.commit()
+
+                    magnets_found += 1
+
+
+                # stop after finding one
+                if magnets_found > 0:
+                    break
+
+            # stop after finding one
+            if magnets_found > 0:
+                break
+
+        #print('mf:', magnets_found)
+
+        db.execute("""
+UPDATE
+    episode
+SET
+    status_id = ?
+WHERE
+    episode.season_id = ?
+""", [
+    entity_statuses['magnetized'] if magnets_found else entity_statuses['unavailable'],
+    r['season_id']
+])
+        db.commit()
+
+
 
 
 # lookup recent search terms and add matching imdb titles

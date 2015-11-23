@@ -216,10 +216,9 @@ WHERE
 
         for f in torrent_info.files():
 
-            # if a file is less than 10 MB, don't give a fuck
-            if f.size < 10485760:
+            # don't give a fuck about file less than 100 MB
+            if f.size < 104857600:
                 continue;
-
 
             #print(f.path)
 

@@ -63,12 +63,12 @@ setup(
         'mako',
         'requests',
         'beautifulsoup4',
-        #'python-libtorrent',
+        'python-libtorrent',
     ],
 
-    # dosn't work nicely, better to install py-libtorrent separately
-    #dependency_links = [
-    #    'http://sourceforge.net/projects/libtorrent/files/latest/download#egg=python-libtorrent',
-    #],
+    dependency_links = [
+        # this is for Windows, needs python2 and boost installed
+        'http://sourceforge.net/projects/libtorrent/files/latest/download#egg=python-libtorrent',
+    ],
 
 )

@@ -2,32 +2,32 @@
 
 <div class="container">
 
-<p>Coming soon!</p>
-
-<table class="table">
 % for r in episodes:
-    <tr>
-        <td>
-            ${r['series_name'] | h}
-        </td>
-        <td>
-            ${'S{0:02d}E{1:02d}'.format(r['season_number'], r['number'])}
-        </td>
-        <td>
-            ${r['synopsis'] | h}
-        </td>
-        <td>
-            <a href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}" target="_blank">
-                IMDB
-            </a>
-        </td>
-        <td>
-            <a href="/play?entity_type=episode&amp;entity_id=${r['id']}" target="_blank">
-                Play
-            </a>
-        </td>
-    </tr>
+    <div class="media">
+      <div class="media-left media-middle">
+        <a href="#">
+          <img src="/t/${r['id']}.jpg" alt="" style="width:217px;">
+        </a>
+      </div>
+      <div class="media-body">
+
+<h4 class="media-heading">${r['series_name'] | h} ${'S{0:02d}E{1:02d}'.format(r['season_number'], r['number'])}</h4>
+<p>${r['synopsis'] | h}</p>
+
+<div class="btn-group-vertical" role="group" aria-label="...">
+    <a class="btn btn-default" href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}/" target="_blank">
+        IMDB
+        <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+    </a>
+    <a class="btn btn-success" href="/play?entity_type=movie&amp;entity_id=${r['id']}" target="_blank">
+        Play
+        <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
+    </a>
+</div>
+
+      </div>
+    </div>
+
 % endfor
-</table>
 
 </div>

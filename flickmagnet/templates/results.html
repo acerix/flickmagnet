@@ -22,14 +22,26 @@ ${r['name'] | h}
 <p>${r['synopsis'] | h}</p>
 
 <div class="btn-group-vertical" role="group" aria-label="...">
+
     <a class="btn btn-default" href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}/" target="_blank">
         IMDB
         <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
     </a>
+
+% if 'movie'==r['type'] or 'episode'==r['type']:
     <a class="btn btn-success" href="/play?entity_type=${r['type']}&amp;entity_id=${r['id']}" target="_blank">
         Play
         <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
     </a>
+% endif
+
+% if 'series'==r['type']:
+    <a class="btn btn-success" href="/series_xspf?entity_id=${r['id']}" target="_blank">
+        Open as Playlist
+        <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
+    </a>
+% endif
+
 </div>
 
       </div>

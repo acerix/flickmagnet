@@ -9,7 +9,6 @@ import requests
 class TestSpiderd(unittest.TestCase):
 
     # connected to Internet?
-    @unittest.skip("too slow")
     def test_internet(self):
         requests_session = requests.Session()
         self.assertTrue(spiderd.internet_works(requests_session))

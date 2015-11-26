@@ -60,7 +60,7 @@ def start(settings, db_connect):
     db = db_connect()
     requests_session = requests.Session()
 
-    print('spiderd started')
+    # print('spiderd started')
 
     while not internet_works(requests_session):
         print('spiderd: error connecting to Internet, trying again in 60 seconds')
@@ -136,7 +136,7 @@ WHERE
 def crawl_imdb_list(settings, db, requests_session, url, public_domain=0):
 
     response = requests_session.get(url)
-    print('crawl:',url)
+    print('crawling',url)
 
     for imdb_id in set(re.findall(r'[^>]href="/title/tt0*(\d+)', response.text)):
         crawl_imdb_title(settings, db, requests_session, imdb_id, public_domain)

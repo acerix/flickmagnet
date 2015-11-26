@@ -45,17 +45,28 @@ def main():
 
 
     print()
-    access_url = 'http://' + settings['http_host']
-    if settings['http_port'] != 80:
-            access_url += ':' + str(settings['http_port'])
+    access_url = 'http://' + config.settings['server']['http_host']
+    if config.settings['server']['http_port'] != 80:
+            access_url += ':' + str(config.settings['server']['http_port'])
     access_url += '/'
-    print('Point your browser to', access_url)
+    print('Listening on', access_url)
     print()
 
+    import signal
+    def kill_children():
+        if torrentd_pid is not None:
+            os.kill(torrentd_pid, signal.SIGTERM)
+        if httpd_pid is not None:
+            os.kill(httpd_pid, signal.SIGTERM)
+        if spiderd_pid is not None:
+            os.kill(spiderd_pid, signal.SIGTERM)
 
-    #while True:
+    import atexit
+    atexit.register(kill_children)
+
+    while True:
         #print('main loop')
-        #time.sleep(60)
+        time.sleep(60)
 
 main()
 

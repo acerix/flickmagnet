@@ -31,7 +31,7 @@ class RootController:
     @cherrypy.expose
     def search(self, q=None, tag=[]):
 
-        sql_movie_filter = sql_episode_filter = "1"
+        sql_movie_filter = sql_episode_filter = sql_series_filter = "1"
 
         query_params = {
             'type_id_movie': cherrypy.thread_data.settings['cached_tables']['entity_type']['movie'],
@@ -78,7 +78,9 @@ VALUES
 
             query = '%'+q+'%'
             sql_movie_filter += " AND movie.name LIKE :query "
-            sql_episode_filter += " AND series.name LIKE :query "
+            sql_episode_filter += " AND series.name || ' ' || series.name || ' S' ||  season.number || ' E' || episode.number LIKE :query "
+            sql_series_filter += " AND series.name LIKE :query "
+
             query_params['query'] = query
 
         # for one tag, convert to list so it's the same as multiple tags
@@ -173,9 +175,24 @@ AND
     magnet_file.entity_id = episode.id
 )
 
+UNION
+
+SELECT
+    'series' type,
+    series.id,
+    series.name,
+    NULL release_year,
+    series.synopsis
+FROM
+    series
+WHERE
+    """ + sql_series_filter + """
+
 )
 
 ORDER BY
+    'series' <> type,
+    'movie' <> type,
     id DESC
 """, query_params)
 
@@ -363,6 +380,77 @@ WHERE
         cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flick.xspf"'
 
         return str.encode(page_template.render(location=location, duration=duration))
+
+
+
+    # generate an xspf playlist every season/episode in a series
+
+    @cherrypy.expose
+    def series_xspf(self, entity_id):
+
+        series_id = int(entity_id)
+
+        dbc = cherrypy.thread_data.db.execute("""
+SELECT
+    *
+FROM
+    series
+WHERE
+    id = ?
+""", [
+    series_id
+])
+
+        series = dbc.fetchone()
+
+        page_template = lookup.get_template("series.xspf")
+
+        dbc = cherrypy.thread_data.db.execute("""
+SELECT
+    'Season ' ||  season.number season_name,
+    'Episode ' || episode.number name,
+    magnet_file.id magnet_file_id
+FROM
+    magnet_file
+JOIN
+    episode
+        ON
+            :type_id_episode = magnet_file.entity_type_id
+        AND
+            episode.id = magnet_file.entity_id
+JOIN
+    season
+        ON
+            season.id = episode.season_id
+WHERE
+    season.series_id = :series_id
+GROUP BY
+    episode.id
+ORDER BY
+    season.number,
+    episode.number
+""", {
+    'series_id': series_id,
+    'type_id_episode': cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
+})
+
+        episodes = []
+
+        for r in dbc.fetchall():
+            episodes.append({
+                'season_name': r['season_name'],
+                'name': r['name'],
+                'location': 'http://%s:%d/stream?magnet_file_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], r['magnet_file_id'])
+            })
+
+        cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
+        cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="series.xspf"'
+
+        return str.encode(page_template.render(
+            series_name = series['name'],
+            episodes = episodes
+        ))
+
 
 
     # stream a video

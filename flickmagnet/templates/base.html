@@ -20,7 +20,11 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="/">Flick Magnet 0.0.4<!-- @todo actual server name/version --></a>
+<%!
+import config
+brand_name = config.settings['server']['name'] + ' ' + config.settings['server']['version']
+%>
+      <a class="navbar-brand" href="/">${brand_name}</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->

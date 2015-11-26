@@ -11,6 +11,7 @@ import requests
 class TestTorrentd(unittest.TestCase):
 
     # listen to the torrent port in a new process, then check that it works
+    @unittest.skip("too slow and pretty useless")
     def test_port(self):
 
         # start torrentd in the background

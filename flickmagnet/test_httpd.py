@@ -11,6 +11,7 @@ import requests
 class TestHttpd(unittest.TestCase):
 
     # listen to the http port in a new process, then check that robots.txt file matches
+    @unittest.skip("too slow")
     def test_robots_txt(self):
 
         file_uri = 'robots.txt'

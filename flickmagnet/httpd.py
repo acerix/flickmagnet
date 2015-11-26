@@ -373,13 +373,10 @@ WHERE
 
         location = 'http://%s:%d/stream?magnet_file_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], magnet_file_id)
 
-        # @todo actual duration
-        duration = 0
-
         cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
         cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flick.xspf"'
 
-        return str.encode(page_template.render(location=location, duration=duration))
+        return str.encode(page_template.render(location=location))
 
 
 
@@ -409,7 +406,8 @@ WHERE
 SELECT
     'Season ' ||  season.number season_name,
     'Episode ' || episode.number name,
-    magnet_file.id magnet_file_id
+    magnet_file.id magnet_file_id,
+    episode.seconds_long
 FROM
     magnet_file
 JOIN
@@ -440,9 +438,11 @@ ORDER BY
             episodes.append({
                 'season_name': r['season_name'],
                 'name': r['name'],
-                'location': 'http://%s:%d/stream?magnet_file_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], r['magnet_file_id'])
+                'location': 'http://%s:%d/stream?magnet_file_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], r['magnet_file_id']),
+                'duration': 0 if r['seconds_long'] is None else r['seconds_long'] * 1000
             })
 
+        #cherrypy.response.headers['Content-Type'] = 'text/plain'
         cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
         cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="series.xspf"'
 

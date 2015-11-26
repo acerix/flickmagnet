@@ -6,8 +6,9 @@
         <track>
             <creator>${series_name}</creator>
             <album>${episode['season_name']}</album>
-            <title>${episode['season_name']} ${episode['name']}</title>
+            <title>${episode['season_name']}, ${episode['name']}</title>
             <location>${episode['location']}</location>
+            <duration>${episode['duration']}</duration>
         </track>
 % endfor
     </trackList>

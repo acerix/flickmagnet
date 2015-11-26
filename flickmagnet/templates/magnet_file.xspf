@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <playlist xmlns="http://xspf.org/ns/0/" version="1">
-    <title>Flick Magnet Stream</title>
+    <title>Flick Magnet</title>
     <trackList>
         <track>
             <location>${location}</location>
-            <duration>${duration}</duration>
         </track>
     </trackList>
 </playlist>

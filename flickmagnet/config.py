@@ -35,8 +35,6 @@ from version import __version__
 settings['server']['version'] = __version__
 
 
-
-
 # where downloads are stored
 
 settings['server']['download_dir'] = cache_dir

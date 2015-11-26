@@ -42,9 +42,20 @@ def main():
         #os._exit(0) # dont actually start
         spiderd.start(config.settings['server'], config.db_connect)
 
-    while True:
+
+
+    print()
+    access_url = 'http://' + settings['http_host']
+    if settings['http_port'] != 80:
+            access_url += ':' + str(settings['http_port'])
+    access_url += '/'
+    print('Point your browser to', access_url)
+    print()
+
+
+    #while True:
         #print('main loop')
-        time.sleep(60)
+        #time.sleep(60)
 
 main()
 

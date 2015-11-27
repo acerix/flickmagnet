@@ -12,6 +12,7 @@ import logging
 import sys
 import os
 import time
+import platform
 
 from multiprocessing import Process
 
@@ -51,7 +52,7 @@ def main():
         time.sleep(60)
 
 
-# the if fixes windows bs
+# fixes for windows
 if __name__ == "__main__":
     main()
 
@@ -61,12 +62,13 @@ def cb_shutdown(message, code):
     logging.info('Daemon is stopping')
     logging.debug(message)
 
-if __name__ == '__main__':
-    daemon = daemonocle.Daemon(
-        worker=main,
-        shutdown_callback=cb_shutdown,
-        pidfile = os.path.join(config.runtime_dir, config.app_name + '.pid'),
-    )
-    if (len(sys.argv) > 1):
-        daemon.do_action(sys.argv[1])
+if 'Windows'!=platform.system():
+    if __name__ == '__main__':
+        daemon = daemonocle.Daemon(
+            worker=main,
+            shutdown_callback=cb_shutdown,
+            pidfile = os.path.join(config.runtime_dir, config.app_name + '.pid'),
+        )
+        if (len(sys.argv) > 1):
+            daemon.do_action(sys.argv[1])
 

@@ -51,6 +51,7 @@ def main():
         time.sleep(60)
 
 
+# the if fixes windows bs
 if __name__ == "__main__":
     main()
 

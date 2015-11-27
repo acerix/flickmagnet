@@ -60,7 +60,7 @@ def start(settings, db_connect):
     db = db_connect()
     requests_session = requests.Session()
 
-    # print('spiderd started')
+    print('spiderd started')
 
     while not internet_works(requests_session):
         print('spiderd: error connecting to Internet, trying again in 60 seconds')

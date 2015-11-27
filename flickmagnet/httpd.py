@@ -556,7 +556,7 @@ def start(settings, db_connect):
     # Tell CherryPy to call "connect" for each thread, when it starts up
     cherrypy.engine.subscribe('start_thread', connect)
 
-    # print('httpd starting on port', settings['http_port'])
+    print('httpd starting on port', settings['http_port'])
 
 
     cherrypy.quickstart(

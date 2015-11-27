@@ -61,7 +61,9 @@ def start(settings, db_connect, save_path):
 
 
     # listen
-    #print('torrentd starting on port', settings['torrent_port'])
+
+    print('torrentd starting on port', settings['torrent_port'])
+
     session_handle.listen_on(settings['torrent_port'], settings['torrent_port'])
 
     # add some dht routers, if a search is ever made while the routing table is empty, those nodes will be used as backups

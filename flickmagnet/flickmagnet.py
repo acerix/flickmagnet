@@ -13,6 +13,8 @@ import sys
 import os
 import time
 
+from multiprocessing import Process
+
 def main():
 
     logging.basicConfig(
@@ -25,24 +27,16 @@ def main():
     print('Starting '+config.settings['server']['name']+' '+config.settings['server']['version'])
 
     # start torrentd
-    torrentd_pid = os.fork()
-    if torrentd_pid == 0:
-        #os._exit(0) # dont actually start
-        torrentd.start(config.settings['server'], config.db_connect, config.cache_dir)
+    torrentd_process = Process(target=torrentd.start, args=(config.settings['server'], config.db_connect, config.cache_dir))
+    torrentd_process.start()
 
     # start httpd
-    httpd_pid = os.fork()
-    if httpd_pid == 0:
-        #os._exit(0) # dont actually start
-        httpd.start(config.settings['server'], config.db_connect)
+    httpd_process = Process(target=httpd.start, args=(config.settings['server'], config.db_connect))
+    httpd_process.start()
 
     # start spiderd
-    spiderd_pid = os.fork()
-    if spiderd_pid == 0:
-        #os._exit(0) # dont actually start
-        spiderd.start(config.settings['server'], config.db_connect)
-
-
+    spiderd_process = Process(target=spiderd.start, args=(config.settings['server'], config.db_connect))
+    spiderd_process.start()
 
     print()
     access_url = 'http://' + config.settings['server']['http_host']
@@ -52,21 +46,11 @@ def main():
     print('Listening on', access_url)
     print()
 
-    import signal
-    def kill_children():
-        if torrentd_pid is not None:
-            os.kill(torrentd_pid, signal.SIGTERM)
-        if httpd_pid is not None:
-            os.kill(httpd_pid, signal.SIGTERM)
-        if spiderd_pid is not None:
-            os.kill(spiderd_pid, signal.SIGTERM)
-
-    import atexit
-    atexit.register(kill_children)
-
     while True:
         #print('main loop')
         time.sleep(60)
+
+
 
 main()
 

@@ -51,9 +51,8 @@ def main():
         time.sleep(60)
 
 
-
-main()
-
+if __name__ == "__main__":
+    main()
 
 import daemonocle
 

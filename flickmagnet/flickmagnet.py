@@ -56,13 +56,14 @@ def main():
 if __name__ == "__main__":
     main()
 
-import daemonocle
-
-def cb_shutdown(message, code):
-    logging.info('Daemon is stopping')
-    logging.debug(message)
-
 if 'Windows'!=platform.system():
+
+    import daemonocle
+
+    def cb_shutdown(message, code):
+        logging.info('Daemon is stopping')
+        logging.debug(message)
+
     if __name__ == '__main__':
         daemon = daemonocle.Daemon(
             worker=main,

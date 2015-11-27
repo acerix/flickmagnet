@@ -5,8 +5,11 @@ import shutil
 import pytoml as toml
 import socket
 
-app_name = 'flickmagnet'
+import ctypes
+import platform
+import sys
 
+app_name = 'flickmagnet'
 
 
 # define filesystem paths
@@ -117,10 +120,21 @@ torrent_sock.close()
 
 
 
+def get_free_space(dirname):
+    """Return folder/drive free space in bytes"""
+    if 'Windows'==platform.system():
+        free_bytes = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(dirname), None, None, ctypes.pointer(free_bytes))
+        return free_bytes.value
+    else:
+        st = os.statvfs(dirname)
+        return st.f_bavail * st.f_frsize
+
+
 
 # default number of days to keep videos is number of free gigabytes in download dir, rounded up
 if 'video_cache_days' not in settings['server']:
-    settings['server']['video_cache_days'] = math.ceil(os.statvfs(settings['server']['download_dir']).f_bavail / 1048576)
+    settings['server']['video_cache_days'] = math.ceil(get_free_space(settings['server']['download_dir']) / 1073741824)
 
 # database just initialized?
 settings['server']['first_run'] = False

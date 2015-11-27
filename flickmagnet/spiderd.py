@@ -48,6 +48,8 @@ import re
 import urllib
 from bs4 import BeautifulSoup
 
+from multiprocessing import Process
+
 # returns true if the Internet is working
 def internet_works(requests_session):
     response = requests_session.get('http://flickmag.net/')
@@ -87,11 +89,8 @@ WHERE
     if existing_publicdomain_movie_count < 2:
 
         # add imdb's public domain movies in a new process
-        spiderd_pid = os.fork()
-        if spiderd_pid == 0:
-            crawl_public_domain_movies(settings, db, requests.Session())
-            os._exit(0)
-
+        spiderd_process = Process(target=crawl_public_domain_movies, args=(db, requests.Session()))
+        spiderd_process.start()
 
     loop_number = 0
 

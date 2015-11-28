@@ -535,12 +535,10 @@ WHERE
 def start(settings, db_connect):
 
     cherrypy.config.update({
-        'server.socket_host': settings['http_addr'],
+        'server.socket_host': str(settings['http_addr']),
         'server.socket_port': settings['http_port'],
         'engine.autoreload.on': False
     })
-
-    cherrypy.server.socket_host = str(settings['http_addr'])
 
     ht_dir = settings['htdocs_dir']
 

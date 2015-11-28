@@ -46,6 +46,7 @@ import time
 import requests
 import re
 import urllib
+import sys
 from bs4 import BeautifulSoup
 
 from multiprocessing import Process
@@ -540,7 +541,7 @@ WHERE
         for search_url in season_search_urls:
 
             # python3
-            if getattr(urllib, 'parse'):
+            if sys.version_info >= (3, 0):
                 results_response = requests_session.get(search_url % (urllib.parse.quote(r['series_name']), r['season_number']))
 
             # python2

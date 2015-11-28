@@ -90,7 +90,7 @@ WHERE
     if existing_publicdomain_movie_count < 2:
 
         # add imdb's public domain movies in a new process
-        spiderd_process = Process(target=crawl_public_domain_movies, args=(settings, db, requests.Session()))
+        spiderd_process = Process(target=crawl_public_domain_movies, args=(settings, db_connect, requests.Session()))
         spiderd_process.start()
 
     loop_number = 0
@@ -717,9 +717,11 @@ WHERE
 
 
 # crawl public domain movies from imdb
-def crawl_public_domain_movies(settings, db, requests_session):
+def crawl_public_domain_movies(settings, db_connect, requests_session):
 
     print('Initilializing database with public domain movies from imdb')
+
+    db = db_connect()
 
     for url in imdb_list_urls:
         crawl_imdb_list(settings, db, requests_session, url, 1)

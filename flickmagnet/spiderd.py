@@ -721,7 +721,5 @@ def crawl_public_domain_movies(settings, db_connect, requests_session):
 
     print('Initilializing database with public domain movies from imdb')
 
-    db = db_connect()
-
     for url in imdb_list_urls:
-        crawl_imdb_list(settings, db, requests_session, url, 1)
+        crawl_imdb_list(settings, db_connect(), requests_session, url, 1)

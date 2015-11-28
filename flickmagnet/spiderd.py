@@ -540,7 +540,7 @@ WHERE
         for search_url in season_search_urls:
 
             # python3
-            if callable(getattr(urllib, 'parse')):
+            if getattr(urllib, 'parse'):
                 results_response = requests_session.get(search_url % (urllib.parse.quote(r['series_name']), r['season_number']))
 
             # python2

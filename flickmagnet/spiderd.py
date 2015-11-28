@@ -90,7 +90,7 @@ WHERE
     if existing_publicdomain_movie_count < 2:
 
         # add imdb's public domain movies in a new process
-        spiderd_process = Process(target=crawl_public_domain_movies, args=(db, requests.Session()))
+        spiderd_process = Process(target=crawl_public_domain_movies, args=(settings, db, requests.Session()))
         spiderd_process.start()
 
     loop_number = 0

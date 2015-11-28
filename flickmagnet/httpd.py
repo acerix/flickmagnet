@@ -540,7 +540,7 @@ def start(settings, db_connect):
         'engine.autoreload.on': False
     })
 
-    cherrypy.server.socket_host = settings['http_addr']
+    cherrypy.server.socket_host = str(settings['http_addr'])
 
     ht_dir = settings['htdocs_dir']
 

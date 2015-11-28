@@ -539,7 +539,14 @@ WHERE
 
         for search_url in season_search_urls:
 
-            results_response = requests_session.get(search_url % (urllib.parse.quote(r['series_name']), r['season_number']))
+            # python3
+            if callable(getattr(urllib, 'parse')):
+                results_response = requests_session.get(search_url % (urllib.parse.quote(r['series_name']), r['season_number']))
+
+            # python2
+            else:
+                from urlparse import urlparse
+                results_response = requests_session.get(search_url % (urlparse.parse.quote(r['series_name']), r['season_number']))
 
             # loop through magnet links
             for btih in set(re.findall(r'btih:([0-9a-fA-F]{40})', results_response.text)):

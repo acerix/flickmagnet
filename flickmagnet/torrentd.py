@@ -50,7 +50,21 @@ def start(settings, db_connect, save_path):
     # start session
     session_handle = libtorrent.session()
 
-    # print(session_handle.get_settings)
+    session_settings = session_handle.get_settings()
+
+
+
+    # default timeouts can cause shutdown to take over a minute
+
+    # number of seconds the tracker connection will wait from when it sent the request until it considers the tracker to have timed-out. Default value is 60 seconds.
+    session_settings['tracker_completion_timeout'] = 3
+
+    # number of seconds to wait to receive any data from the tracker. If no data is received for this number of seconds, the tracker will be considered as having timed out. If a tracker is down, this is the kind of timeout that will occur. The default value is 20 seconds.
+    session_settings['tracker_receive_timeout'] = 1
+
+
+    session_handle.set_settings(session_settings)
+
 
     # load previous state
     if os.path.isfile(settings['libtorrent_state_file']):

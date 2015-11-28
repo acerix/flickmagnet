@@ -2,7 +2,7 @@
 import os
 import math
 import shutil
-import pytoml as toml
+import pytoml
 import socket
 
 import ctypes
@@ -31,7 +31,7 @@ if not os.path.isfile(config_file):
     shutil.copyfile(os.path.join(package_dir, 'examples', 'config.toml'), config_file)
 
 with open(config_file) as config_file_object:
-    settings = toml.load(config_file_object)
+    settings = pytoml.load(config_file_object)
 
 
 

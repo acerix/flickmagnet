@@ -26,4 +26,6 @@ Install PyInstaller with pip
 
 Build with PyInstaller
 
-    pyinstaller --onefile --icon=htdocs/favicon.ico flickmagnet.py
+    pyinstaller --onefile --icon=htdocs/favicon.ico --upx-dir=\upx391w flickmagnet.py
+
+    Install upx for a compressed binary, may need to specify with --upx-dir=\upx391w

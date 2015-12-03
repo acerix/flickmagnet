@@ -33,8 +33,9 @@ setup(
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Programming Language :: Python :: 3',
         'Development Status :: 2 - Pre-Alpha',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 2',
         'Intended Audience :: End Users/Desktop',
         'Topic :: Communications :: File Sharing',
         'Topic :: Internet :: WWW/HTTP :: Indexing/Search',
@@ -64,10 +65,12 @@ setup(
         'requests',
         'beautifulsoup4',
         'python-libtorrent',
+        'pyxdg',
+        #'pyinstaller', required to build windows package
     ],
 
     dependency_links = [
-        # this is for Windows, needs python2 and boost installed
+        # needs python2 and boost installed
         'http://sourceforge.net/projects/libtorrent/files/latest/download#egg=python-libtorrent',
     ],
 

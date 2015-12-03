@@ -31,16 +31,16 @@ Install Flick Magnet
 
 	https://github.com/acerix/flickmagnet/archive/master.zip
 
-    \python27\python.exe setup.py install --optimize=1
+    \python27\python.exe setup.py install
 
 Install PyInstaller
 
-    pip install pyinstaller
+    \python27\Scripts\pip.exe install pyinstaller
     
     http://www.pyinstaller.org/
 
 Build package with PyInstaller
 
-    pyinstaller --onefile --icon=htdocs/favicon.ico --upx-dir=\upx391w flickmagnet.py
+    \Python27\Scripts\pyinstaller.exe --onefile --upx-dir=\upx391w --icon=htdocs/favicon.ico flickmagnet.py
 
     Install upx for a compressed binary, dir specified in: --upx-dir

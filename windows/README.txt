@@ -1,4 +1,4 @@
-=  Flick Magnet Installer for Windows =
+=  Building Flick Magnet for Windows =
 
 Install Visual C++ 2008 (9.0)
 

@@ -6,7 +6,7 @@
 
     <div class="media">
       <div class="media-left media-middle">
-        <a href="#">
+        <a href="/entity?entity_type=${r['type']}&amp;entity_id=${r['id']}">
           <img src="/t/${r['id']}.jpg" alt="" style="width:217px;">
         </a>
       </div>
@@ -51,11 +51,12 @@ ${r['name'] | h}
 
 % if deep_search_running:
 <div class="panel panel-warning">
+  <div class="panel-heading">Searching...</div>
   <div class="panel-body">
-    <p>Deep search started, results will be updated in 30 seconds...</p>
+    <p>Deep search started, results will be updated in 30 seconds.</p>
   </div>
 </div>
-<meta http-equiv="refresh" content="25">
+<meta http-equiv="refresh" content="27">
 % endif
 
 </div>

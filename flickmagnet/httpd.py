@@ -40,7 +40,7 @@ class RootController:
 
         deep_search_running = False
 
-        if q is not None and len(q):
+        if len(q):
 
             # tell spiderd to find titles with this match
             dbc = cherrypy.thread_data.db.execute("""
@@ -78,7 +78,7 @@ VALUES
 
             query = '%'+q+'%'
             sql_movie_filter += " AND movie.name LIKE :query "
-            sql_episode_filter += " AND series.name || ' ' || series.name || ' S' ||  season.number || ' E' || episode.number LIKE :query "
+            sql_episode_filter += " AND 'S' ||  season.number || 'E' || episode.number LIKE :query "
             sql_series_filter += " AND series.name LIKE :query "
 
             query_params['query'] = query
@@ -233,6 +233,8 @@ AND
 )
 ORDER BY
     movie.id DESC
+LIMIT
+	50
 """ % (
     date.today().year + 1 - cherrypy.thread_data.settings['copyright_length'],
     cherrypy.thread_data.settings['cached_tables']['entity_type']['movie']
@@ -284,6 +286,8 @@ AND
 )
 ORDER BY
     episode.id DESC
+LIMIT
+	50
 """ % (
     cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
 ))
@@ -293,6 +297,57 @@ ORDER BY
             title = "TV Shows",
             episodes = new_episodes
         )
+
+
+
+    # entity info page
+    
+    @cherrypy.expose
+    def entity(self, entity_type, entity_id):
+
+        entity_type_id = cherrypy.thread_data.settings['cached_tables']['entity_type'][entity_type]
+
+        page_template = lookup.get_template("entity.html")
+
+        dbc = cherrypy.thread_data.db.execute("""
+SELECT
+    id
+FROM
+    magnet_file
+WHERE
+    entity_type_id = ?
+AND
+    entity_id = ?
+""", [
+    entity_type_id,
+    entity_id
+])
+
+        magnet_file = dbc.fetchone()
+
+        if magnet_file:
+
+            # set torrent to start streaming
+            dbc = cherrypy.thread_data.db.execute("""
+UPDATE
+    magnet_file
+SET
+    status_id = %d
+WHERE
+    id = %d
+""" % (
+    cherrypy.thread_data.settings['cached_tables']['magnet_file_status']['start watching'],
+    magnet_file['id']
+))
+            cherrypy.thread_data.db.commit()
+
+            return page_template.render(
+                entity_id = entity_id,
+                magnet_file_id = magnet_file['id']
+            )
+
+
+        return 'no magnets found'
 
 
 
@@ -340,6 +395,7 @@ WHERE
             cherrypy.thread_data.db.commit()
 
             return page_template.render(
+                title = 'Watch Video',
                 entity_id = entity_id,
                 magnet_file_id = magnet_file['id']
             )
@@ -529,6 +585,28 @@ WHERE
 
         return video_stream_or_block()
 
+
+
+
+	# recently watched videos
+
+    @cherrypy.expose
+    def history(self):
+        page_template = lookup.get_template("history.html")
+        return page_template.render(
+            results = []
+        )
+
+
+
+	# daemon status info
+
+    @cherrypy.expose
+    def status(self):
+        page_template = lookup.get_template("status.html")
+        return page_template.render(
+            status = 'alive'
+        )
 
 
 

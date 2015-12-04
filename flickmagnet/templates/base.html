@@ -33,7 +33,7 @@ brand_name = config.settings['server']['name'] + ' ' + config.settings['server']
         <li><a href="/movies">Movies</a></li>
         <li><a href="/tv">TV Shows</a></li>
         <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">By Genre <span class="caret"></span></a>
+          <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">By Genre <span class="caret"></span></a>
 
 <ul class="dropdown-menu">
 <%
@@ -56,13 +56,15 @@ tags = dbc.fetchall()
       </ul>
       <form class="navbar-form navbar-left" role="search" action="/search">
         <div class="form-group">
-          <input type="search" name="q" class="form-control" placeholder="Search by Title">
+          <input type="search" name="q" class="form-control" placeholder="Search by Title" autofocus>
         </div>
         <button type="submit" class="btn btn-default">Search</button>
       </form>
       <ul class="nav navbar-nav navbar-right">
+        <li><a href="/history">History</a></li>
+        <li><a href="/status">Status</a></li>
         <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Help <span class="caret"></span></a>
+          <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Help <span class="caret"></span></a>
           <ul class="dropdown-menu">
             <li><a href="https://github.com/acerix/flickmagnet/blob/master/README.md" target="_blank">Documentation</a></li>
             <li><a href="https://github.com/acerix/flickmagnet/issues/new" target="_blank">Report Issue</a></li>

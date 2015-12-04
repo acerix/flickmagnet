@@ -1,0 +1,22 @@
+<%inherit file="base.html"/>
+
+<div class="container">
+
+    <div class="panel panel-default">
+      <div class="panel-heading">${title}</div>
+      <div class="panel-body">
+        <div class="btn-group" role="group" aria-label="...">
+            <a class="btn btn-default" href="/stream?magnet_file_id=${magnet_file_id}">Download Video</a>
+            <a class="btn btn-default" href="/xspf?magnet_file_id=${magnet_file_id}">Open in Video Player</a>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="embed-responsive embed-responsive-16by9">
+        <video controls preload="auto" autoplay poster="/t/${entity_id}.jpg">
+            <source src="/stream?magnet_file_id=${magnet_file_id}" type="video/mp4">
+        </video>
+    </div>
+
+</div>

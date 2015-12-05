@@ -40,7 +40,7 @@ class RootController:
 
         deep_search_running = False
 
-        if len(q):
+        if q is not None and len(q):
 
             # tell spiderd to find titles with this match
             dbc = cherrypy.thread_data.db.execute("""

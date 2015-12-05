@@ -7,23 +7,23 @@
 imdb_list_urls = [
 
 	# public domain movies
-	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc',
-	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc&start=251'
+#	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc',
+#	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc&start=251'
 
 ]
 
-# lists of new released on imdb.com updated once a day
+# lists of urls to check for new movies every day
 imdb_update_urls = [
 
 	# new dvd releases
-	'http://www.imdb.com/sections/dvd/'
+#	'http://www.imdb.com/sections/dvd/'
 
 ]
 
 # pages with magnets or torrents to scrape
 crawl_urls = [
-	'https://kat.cr/tv/',
-	'https://kat.cr/movies/'
+#	'https://kat.cr/tv/',
+#	'https://kat.cr/movies/'
 ]
 
 # urls to query for a list of magnets/torrents based on imdb id %d
@@ -261,6 +261,7 @@ VALUES
 	synopsis,
 	public_domain
 ])
+		db.commit()
 
 
 	if 'series'==entity_type:
@@ -286,8 +287,7 @@ VALUES
 	rating,
 	synopsis
 ])
-
-	db.commit()
+		db.commit()
 
 
 	if 'series'==entity_type:
@@ -340,7 +340,7 @@ VALUES
 	season_id,
 	episode_imdb_id_match.group(2)
 ])
-			db.commit()
+				db.commit()
 
 	entity_id = str(imdb_id)
 
@@ -719,7 +719,6 @@ WHERE
 
 
 
-
 # crawl public domain movies from imdb
 def crawl_public_domain_movies(settings, db_connect, requests_session):
 
@@ -727,3 +726,4 @@ def crawl_public_domain_movies(settings, db_connect, requests_session):
 
 	for url in imdb_list_urls:
 		crawl_imdb_list(settings, db_connect(), requests_session, url, 1)
+

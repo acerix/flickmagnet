@@ -24,11 +24,13 @@ dht_bootstrap_nodes = [
 ]
 
 default_trackers = [
-	'udp://tracker.openbittorrent.com:80',
-	'udp://open.demonii.com:1337',
-	'udp://tracker.coppersurfer.tk:6969',
-	'udp://tracker.leechers-paradise.org:6969',
-	'http://pow7.com/announce'
+	'udp://tracker.openbittorrent.com:80/announce',
+	'udp://open.demonii.com:1337/announce',
+	'udp://tracker.coppersurfer.tk:6969/announce',
+	'udp://tracker.leechers-paradise.org:6969/announce',
+	'http://pow7.com/announce',
+	'udp://tracker.publicbt.com/announce',
+	'udp://glotorrents.pw:6969/announce'
 ]
 
 import inspect

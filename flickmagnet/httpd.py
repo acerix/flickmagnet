@@ -460,8 +460,8 @@ WHERE
 
         dbc = cherrypy.thread_data.db.execute("""
 SELECT
-    'Season ' ||  season.number season_name,
-    'Episode ' || episode.number name,
+    'Season ' || substr('0'||season.number, -2, 2) season_name,
+    'Episode ' || substr('0'||episode.number, -2, 2) name,
     magnet_file.id magnet_file_id,
     episode.seconds_long
 FROM

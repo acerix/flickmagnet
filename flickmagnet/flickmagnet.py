@@ -27,6 +27,8 @@ def main():
 
     print('Starting '+config.settings['server']['name']+' '+config.settings['server']['version'])
 
+    os._exit(0)
+
     # start torrentd
     torrentd_process = Process(target=torrentd.start, args=(config.settings['server'], config.db_connect, config.cache_dir))
     torrentd_process.start()

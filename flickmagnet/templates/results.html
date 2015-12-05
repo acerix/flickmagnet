@@ -13,10 +13,12 @@
       <div class="media-body">
 
 <h4 class="media-heading">
+<a href="/entity?entity_type=${r['type']}&amp;entity_id=${r['id']}">
 ${r['name'] | h}
 % if r['release_year']:
      (${r['release_year']})
 % endif
+</a>
 </h4>
 
 <p>${r['synopsis'] | h}</p>

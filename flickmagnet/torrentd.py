@@ -28,9 +28,8 @@ default_trackers = [
 	'udp://open.demonii.com:1337/announce',
 	'udp://tracker.coppersurfer.tk:6969/announce',
 	'udp://tracker.leechers-paradise.org:6969/announce',
-	'http://pow7.com/announce',
-	'udp://tracker.publicbt.com/announce',
-	'udp://glotorrents.pw:6969/announce'
+	'udp://glotorrents.pw:6969/announce',
+	'http://pow7.com/announce'
 ]
 
 import inspect
@@ -54,6 +53,21 @@ def load_state(settings, session_handle):
 			)
 			#print('torrentd state loaded from', settings['libtorrent_state_file'])
 
+
+
+# store the metadata of active torrents
+def save_torrents(settings, session_handle):
+
+	for torrent_handle in session_handle.get_torrents():
+		resume_data = torrent_handle.save_resume_data()
+		print('save', torrent_handle.info_hash(), resume_data, type(resume_data))
+		if resume_data is not None:
+			print(resume_data)
+			with open(os.path.join(settings['download_dir'], torrent_handle.info_hash() + '.torrent'), 'wb') as resume_data_file:
+				print(os.path.join(settings['download_dir'], torrent_handle.info_hash() + '.torrent'))
+				resume_data_file.write(libtorrent.bencode(resume_data))
+		
+		
 
 
 
@@ -115,12 +129,11 @@ def start(settings, db_connect, save_path):
 
 		save_state(settings, session_handle)
 		
+		save_torrents(settings, session_handle)
+
 		
 		preload_new_magnets(session_handle, save_path, db, magnet_statuses)
 		
-		os._exit(0)
-
-
 		#print()
 
 		for alert in session_handle.pop_alerts():
@@ -160,7 +173,7 @@ def start(settings, db_connect, save_path):
 		# print('torrent cleanup')
 		# session_handle.remove_torrent(torrent_handle)
 
-		process_queue(session_handle, save_path, db, magnet_statuses)
+		#process_queue(session_handle, save_path, db, magnet_statuses)
 
 		time.sleep(3)
 
@@ -202,7 +215,7 @@ WHERE
 # start downloading the torrent file immediately, with highest priority, starting at the byte_offset
 def start_streaming_magnet_file(session_handle, save_path, btih, video_filename, magnet_file_id, db, magnet_statuses, byte_offset=0):
 	
-	print(btih, video_filename, magnet_file_id)
+	print(btih, 'start streaming', video_filename, magnet_file_id)
 
 	stop_all_downloads(session_handle, db, magnet_statuses)
 		
@@ -218,7 +231,7 @@ def start_streaming_magnet_file(session_handle, save_path, btih, video_filename,
 
 	# putting it in a magnet URL works
 	torrent_handle = session_handle.add_torrent({
-		'save_path': save_path,
+		'save_path': os.path.join(save_path, btih),
 		'url': 'magnet:?xt=urn:btih:' + btih,
 		'storage_mode': libtorrent.storage_mode_t.storage_mode_allocate
 	})
@@ -260,7 +273,7 @@ WHERE
 ])
 	magnet_file = dbc.fetchone()
 
-	print(btih, 'parsing metadata')
+	print(btih, 'looking at metadata')
 
 	# tv episode
 	if 1 == magnet_file['entity_type_id']:
@@ -451,29 +464,7 @@ WHERE
 # get metadata for new titles
 def preload_new_magnets(session_handle, save_path, db, magnet_statuses):
 	
-	print(save_path)
-	
-	return
-
-	torrent_handle = session_handle.add_torrent({
-		'save_path': save_path,
-		'url': 'magnet:?xt=urn:btih:' + btih
-	})
-
-	# add some udp trackers
-	for url in default_trackers:
-		torrent_handle.add_tracker({
-			'url': url
-		})
-
-	torrent_handle.force_dht_announce()
-	torrent_handle.set_sequential_download(True)
-
-
-
-
-
-	# find videos queued to start streaming
+	# find torrents queued to preload
 	dbc = db.execute("""
 SELECT
 	magnet_file.*,
@@ -485,31 +476,43 @@ JOIN
 		ON
 			magnet.id = magnet_file.magnet_id
 WHERE
-	magnet_file.status_id = :status_id_start_watching
+	magnet_file.status_id = :status_id_new
 """, {
-	'status_id_start_watching': magnet_statuses['start watching']
+	'status_id_new': magnet_statuses['new']
 })
 
 	for r in dbc.fetchall():
 		
 		# start watching
-		print('start watching')
+		print(r['btih'], 'preloading...')
 		
 		dbc = db.execute("""
 UPDATE
 	magnet_file
 SET
-	status_id = :status_id_watching
+	status_id = :status_id_preloading
 WHERE
 	magnet_file.id = :magnet_file_id
 """, {
-	'status_id_watching': magnet_statuses['watching'],
+	'status_id_preloading': magnet_statuses['preloading'],
 	'magnet_file_id': r['id']
 })
 		db.commit()
 		
-		start_streaming_magnet_file(session_handle, save_path, r['btih'], r['filename'], r['id'], db, magnet_statuses, r['stream_position'])
+		torrent_handle = session_handle.add_torrent({
+			'save_path': os.path.join(save_path, r['btih']),
+			'url': 'magnet:?xt=urn:btih:' + r['btih']
+		})
+		
+		# @todo does it download the metadata when paused?
+		torrent_handle.pause()
 
+		# add some udp trackers
+		for url in default_trackers:
+			torrent_handle.add_tracker({
+				'url': url
+			})
 
-
-
+		torrent_handle.force_dht_announce()
+		torrent_handle.set_sequential_download(True)
+		return

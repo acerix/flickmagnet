@@ -304,8 +304,72 @@ LIMIT
     
     @cherrypy.expose
     def entity(self, entity_type, entity_id):
-
+    
         entity_type_id = cherrypy.thread_data.settings['cached_tables']['entity_type'][entity_type]
+        
+        
+        if 'series' == entity_type:
+            
+            page_template = lookup.get_template("series.html")
+            
+            dbc = cherrypy.thread_data.db.execute("""
+SELECT
+    *
+FROM
+    series
+WHERE
+    id = ?
+""", [
+    entity_id
+])
+
+            series = dbc.fetchone()
+            
+            if series:
+                
+                dbc = cherrypy.thread_data.db.execute("""
+SELECT
+    season.number season_number,
+    'Season ' || season.number season_name,
+    episode.number episode_number,
+    'Episode ' || episode.number name,
+    magnet_file.id magnet_file_id,
+    episode.seconds_long
+FROM
+    magnet_file
+JOIN
+    episode
+        ON
+            :type_id_episode = magnet_file.entity_type_id
+        AND
+            episode.id = magnet_file.entity_id
+JOIN
+    season
+        ON
+            season.id = episode.season_id
+WHERE
+    season.series_id = :series_id
+GROUP BY
+    episode.id
+ORDER BY
+    season.number,
+    episode.number
+""", {
+    'series_id': entity_id,
+    'type_id_episode': cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
+})
+
+                episodes = dbc.fetchall()
+                
+                return page_template.render(
+                    series = series,
+                    episodes = episodes,
+                )
+                
+            return 'series not found'
+                
+
+        
 
         page_template = lookup.get_template("entity.html")
 
@@ -342,10 +406,10 @@ WHERE
             cherrypy.thread_data.db.commit()
 
             return page_template.render(
+                title = entity_type + ' #' + entity_id,
                 entity_id = entity_id,
                 magnet_file_id = magnet_file['id']
             )
-
 
         return 'no magnets found'
 
@@ -497,6 +561,9 @@ ORDER BY
                 'location': 'http://%s:%d/stream?magnet_file_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], r['magnet_file_id']),
                 'duration': 0 if r['seconds_long'] is None else r['seconds_long'] * 1000
             })
+        
+        if len(episodes) == 0:
+            return 'no episodes found yet'
 
         #cherrypy.response.headers['Content-Type'] = 'text/plain'
         cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
@@ -522,11 +589,16 @@ ORDER BY
             dbc = cherrypy.thread_data.db.execute("""
 SELECT
     magnet_file.*,
+    magnet.btih,
     4 torrent_status
 FROM
     magnet_file
+JOIN
+    magnet
+        ON
+            magnet.id = magnet_file.magnet_id
 WHERE
-    id = ?
+    magnet_file.id = ?
 """, [
     magnet_file_id
 ])
@@ -542,7 +614,7 @@ WHERE
 
 
 
-        video_filename = os.path.join(cherrypy.thread_data.settings['download_dir'], magnet_file['filename'])
+        video_filename = os.path.join(cherrypy.thread_data.settings['download_dir'], magnet_file['btih'], magnet_file['filename'])
 
         # wait for video file to start downloading
         for n in range(30):

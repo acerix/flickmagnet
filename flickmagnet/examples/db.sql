@@ -99,6 +99,8 @@ CREATE TABLE "magnet_file_status" (
     `name`  TEXT NOT NULL UNIQUE
 );
 INSERT INTO `magnet_file_status` VALUES (1,'new'),
+ (2,'preloading'),
+ (3,'preloaded'),
  (11,'start watching'),
  (12,'stop watching'),
  (13,'delete'),

@@ -177,10 +177,8 @@ WHERE
 	if existing_entity is not None and not replace_existing:
 		return
 
-	print('add imdb id:', imdb_id)
+	#print('add imdb id:', imdb_id)
 	
-	print('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
-
 	response = requests_session.get('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
 
 	soup = BeautifulSoup(response.content, 'html.parser')

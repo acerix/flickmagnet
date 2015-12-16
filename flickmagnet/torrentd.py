@@ -62,7 +62,7 @@ def load_state(settings, session_handle):
 			session_handle.load_state(
 				libtorrent.bdecode(state_file.read())
 			)
-			print('torrentd state loaded from', settings['libtorrent_state_file'])
+			#print('torrentd state loaded from', settings['libtorrent_state_file'])
 
 
 def start(settings, db_connect, save_path):

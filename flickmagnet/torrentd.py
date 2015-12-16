@@ -5,6 +5,7 @@ import time
 import libtorrent
 import sys
 import re
+import requests
 
 import binascii
 
@@ -165,7 +166,7 @@ def start(settings, db_connect, save_path):
 		# print('torrent cleanup')
 		# session_handle.remove_torrent(torrent_handle)
 
-		#process_queue(session_handle, save_path, db, magnet_statuses)
+		process_queue(session_handle, save_path, db, magnet_statuses)
 
 		time.sleep(3)
 
@@ -181,6 +182,8 @@ def start(settings, db_connect, save_path):
 # stop any torrents
 # @todo only stop torrents for this user
 def stop_all_downloads(session_handle, db, magnet_statuses):
+	#print('stop_all_downloads')
+	return
 	
 	# change "watching" to "ready"
 	dbc = db.execute("""
@@ -210,7 +213,7 @@ def start_streaming_magnet_file(session_handle, save_path, btih, video_filename,
 	print(btih, 'start streaming', video_filename, magnet_file_id)
 
 	stop_all_downloads(session_handle, db, magnet_statuses)
-		
+	
 	# can't get add_torrent to work with infohash
 	#
 	# btih_bytes = binascii.unhexlify(btih)
@@ -238,11 +241,26 @@ def start_streaming_magnet_file(session_handle, save_path, btih, video_filename,
 	torrent_handle.set_sequential_download(True)
 
 
-
-
 	print(btih, 'waiting for torrent metadata')
 
-	# @todo timeout
+
+	# use https://torcache.net/torrent/{btih}.torrent if possible to avoid waiting for metadata
+	torrent_data_requrest = requests.get('http://torcache.net/torrent/'+btih+'.torrent', headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0'})
+	if (len(torrent_data_requrest.content)):
+		torrent_data = libtorrent.bdecode(torrent_data_requrest.content)
+		#print(torrent_data)
+		torrent_info = libtorrent.torrent_info(torrent_data)
+		
+		# @todo better way than just re-adding it?  
+		torrent_handle = session_handle.add_torrent({
+			'save_path': os.path.join(save_path, btih),
+			'url': 'magnet:?xt=urn:btih:' + btih,
+			'storage_mode': libtorrent.storage_mode_t.storage_mode_allocate,
+			'ti': torrent_info
+		})
+	
+
+	# @todo don't wait forever
 	while torrent_handle.status().state<3:
 		torrent_status = torrent_handle.status()
 		print(btih, status_names[torrent_status.state])
@@ -410,6 +428,7 @@ def find_episode_number_in_file_path(file_path, series_title=None):
 
 # process magnet_file actions
 def process_queue(session_handle, save_path, db, magnet_statuses):
+	print('process_queue')
 
 	# find videos queued to start streaming
 	dbc = db.execute("""
@@ -424,6 +443,8 @@ JOIN
 			magnet.id = magnet_file.magnet_id
 WHERE
 	magnet_file.status_id = :status_id_start_watching
+OR
+	1
 """, {
 	'status_id_start_watching': magnet_statuses['start watching']
 })

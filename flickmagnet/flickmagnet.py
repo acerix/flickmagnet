@@ -37,7 +37,7 @@ def main():
 
     # start spiderd
     spiderd_process = Process(target=spiderd.start, args=(config.settings['server'], config.db_connect))
-    spiderd_process.start()
+    #spiderd_process.start()
 
     print()
     access_url = 'http://' + config.settings['server']['http_host']

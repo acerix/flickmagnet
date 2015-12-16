@@ -605,10 +605,26 @@ WHERE
 
             magnet_file = dbc.fetchone()
 
-            if len(magnet_file['filename']):
-                break
+            if magnet_file:
+                
+                # set torrent to start streaming
+                dbc = cherrypy.thread_data.db.execute("""
+UPDATE
+    magnet_file
+SET
+    status_id = %d
+WHERE
+    id = %d
+""" % (
+    cherrypy.thread_data.settings['cached_tables']['magnet_file_status']['start watching'],
+    magnet_file['id']
+))
 
-            print('waiting for torrent metadata')
+            if magnet_file and len(magnet_file['filename']):
+                break
+            
+            print('httpd: waiting for torrent metadata  ')
+            
             time.sleep(n)
 
 
@@ -620,7 +636,7 @@ WHERE
         for n in range(30):
             if os.path.isfile(video_filename):
                 break
-            print('waiting for video to start downloading')
+            print('httpd: waiting for video to start downloading')
             time.sleep(n)
 
 

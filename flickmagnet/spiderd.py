@@ -7,8 +7,8 @@
 imdb_list_urls = [
 
 	# public domain movies
-#	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc',
-#	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc&start=251'
+	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc',
+	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc&start=251'
 
 ]
 
@@ -53,7 +53,7 @@ from multiprocessing import Process
 
 # returns true if the Internet is working
 def internet_works(requests_session):
-	response = requests_session.get('http://flickmag.net/')
+	response = requests_session.get('http://www.google.com/')
 	return len(response.text) > 0
 
 
@@ -103,7 +103,7 @@ WHERE
 		propagate_queries(settings, db, requests_session)
 
 		# finds magnets for newly added episodes
-		magnetize_new_episodes(settings, db, requests_session)
+		#magnetize_new_episodes(settings, db, requests_session)
 
 		# finds magnets for newly added movies
 		magnetize_new_movies(settings, db, requests_session)
@@ -178,6 +178,8 @@ WHERE
 		return
 
 	print('add imdb id:', imdb_id)
+	
+	print('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
 
 	response = requests_session.get('http://www.imdb.com/title/tt' + str(imdb_id).zfill(7) + '/')
 
@@ -226,7 +228,7 @@ WHERE
 
 	# find synopsis
 	synopsis_tag = soup.select_one('p[itemprop="description"]')
-	synopsis = synopsis_tag.string.strip() if synopsis_tag.string else ""
+	synopsis = synopsis_tag.string.strip() if synopsis_tag and synopsis_tag.string else ""
 
 
 	if 'movie'==entity_type:
@@ -373,7 +375,7 @@ VALUES
 	if not os.path.exists(cover_image_filename):
 
 		# small
-		cover_img_tag = soup.select_one('img[width="214"]')
+		cover_img_tag = soup.select_one('img[itemprop="image"]')
 
 		# large
 		#cover_img_tag = soup.select_one('meta[property="og:image"]')
@@ -386,6 +388,9 @@ VALUES
 			cover_img_f = open(cover_image_filename, 'wb')
 			cover_img_f.write(cover_img_response.content)
 			cover_img_f.close()
+		
+		else:
+			print('no image')
 
 
 

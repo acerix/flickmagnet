@@ -36,7 +36,17 @@ import inspect
 
 
 
+
+# store the metadata of active torrents
+def save_torrents(settings, session_handle):
+	
+	for torrent_handle in session_handle.get_torrents():
+		resume_data = torrent_handle.save_resume_data()
+		
+
 def save_state(settings, session_handle):
+	
+	save_torrents(settings, session_handle)
 
 	with open(settings['libtorrent_state_file'], 'wb') as state_file:
 		state_file.write(libtorrent.bencode(session_handle.save_state()))
@@ -48,27 +58,11 @@ def load_state(settings, session_handle):
 
 	if os.path.isfile(settings['libtorrent_state_file']):
 		with open(settings['libtorrent_state_file'], 'rb') as state_file:
+			#print(state_file.read())
 			session_handle.load_state(
 				libtorrent.bdecode(state_file.read())
 			)
-			#print('torrentd state loaded from', settings['libtorrent_state_file'])
-
-
-
-# store the metadata of active torrents
-def save_torrents(settings, session_handle):
-
-	for torrent_handle in session_handle.get_torrents():
-		resume_data = torrent_handle.save_resume_data()
-		print('save', torrent_handle.info_hash(), resume_data, type(resume_data))
-		if resume_data is not None:
-			print(resume_data)
-			with open(os.path.join(settings['download_dir'], torrent_handle.info_hash() + '.torrent'), 'wb') as resume_data_file:
-				print(os.path.join(settings['download_dir'], torrent_handle.info_hash() + '.torrent'))
-				resume_data_file.write(libtorrent.bencode(resume_data))
-		
-		
-
+			print('torrentd state loaded from', settings['libtorrent_state_file'])
 
 
 def start(settings, db_connect, save_path):
@@ -129,10 +123,8 @@ def start(settings, db_connect, save_path):
 
 		save_state(settings, session_handle)
 		
-		save_torrents(settings, session_handle)
-
-		
-		preload_new_magnets(session_handle, save_path, db, magnet_statuses)
+		# download torrent metadata for new magnets
+		#preload_new_magnets(session_handle, save_path, db, magnet_statuses)
 		
 		#print()
 

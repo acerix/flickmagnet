@@ -7,8 +7,8 @@
 imdb_list_urls = [
 
 	# public domain movies
-#	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc',
-#	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc&start=251'
+	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc',
+	'http://www.imdb.com/list/ls003915205/?view=compact&sort=created:desc&start=251'
 
 ]
 
@@ -74,13 +74,8 @@ def start(settings, db_connect):
 		print('spiderd first run')
 
 		# start by adding Wizard of Oz as a demo that works right away
-		#crawl_imdb_title(settings, db, requests_session, 16544, 1, True)
+		crawl_imdb_title(settings, db, requests_session, 16544, 1, True)
 		
-		
-		# debug only
-		crawl_imdb_title(settings, db, requests_session, 2911666, 1)
-
-
 
 	# only spider public domain movies one time
 	dbc = db.execute("""

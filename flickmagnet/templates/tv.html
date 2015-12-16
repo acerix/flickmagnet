@@ -2,6 +2,10 @@
 
 <div class="container">
 
+% if not len(episodes):
+    <p>No results found, try searching.</p>
+% endif
+
 % for r in episodes:
     <div class="media">
       <div class="media-left media-middle">

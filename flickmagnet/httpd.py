@@ -583,6 +583,46 @@ ORDER BY
 
         magnet_file_id = int(magnet_file_id)
 
+
+
+        dbc = cherrypy.thread_data.db.execute("""
+SELECT
+    magnet_file.*,
+    magnet.btih,
+    4 torrent_status
+FROM
+    magnet_file
+JOIN
+    magnet
+        ON
+            magnet.id = magnet_file.magnet_id
+WHERE
+    magnet_file.id = ?
+""", [
+    magnet_file_id
+])
+
+        magnet_file = dbc.fetchone()
+
+        if magnet_file:
+            
+            # set torrent to start streaming
+            dbc = cherrypy.thread_data.db.execute("""
+UPDATE
+    magnet_file
+SET
+    status_id = %d
+WHERE
+    id = %d
+""" % (
+    cherrypy.thread_data.settings['cached_tables']['magnet_file_status']['start watching'],
+    magnet_file['id']
+))
+            cherrypy.thread_data.db.commit()
+
+
+
+
         # wait for torrent metadata to be downloaded and video file to be located
         for n in range(30):
 
@@ -604,21 +644,6 @@ WHERE
 ])
 
             magnet_file = dbc.fetchone()
-
-            if magnet_file:
-                
-                # set torrent to start streaming
-                dbc = cherrypy.thread_data.db.execute("""
-UPDATE
-    magnet_file
-SET
-    status_id = %d
-WHERE
-    id = %d
-""" % (
-    cherrypy.thread_data.settings['cached_tables']['magnet_file_status']['start watching'],
-    magnet_file['id']
-))
 
             if magnet_file and len(magnet_file['filename']):
                 break

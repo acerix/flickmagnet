@@ -2,6 +2,10 @@
 
 <div class="container">
 
+% if not len(results):
+    <p>No results found, it may help to wait a few minutes and refresh this page.</p>
+% endif
+
 % for r in results:
 
     <div class="media">
@@ -52,6 +56,7 @@ ${r['name'] | h}
 % endfor
 
 % if deep_search_running:
+<br>
 <div class="panel panel-warning">
   <div class="panel-heading">Searching...</div>
   <div class="panel-body">

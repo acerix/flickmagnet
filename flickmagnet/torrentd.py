@@ -183,7 +183,6 @@ def start(settings, db_connect, save_path):
 # @todo only stop torrents for this user
 def stop_all_downloads(session_handle, db, magnet_statuses):
 	#print('stop_all_downloads')
-	return
 	
 	# change "watching" to "ready"
 	dbc = db.execute("""
@@ -214,22 +213,45 @@ def start_streaming_magnet_file(session_handle, save_path, btih, video_filename,
 
 	stop_all_downloads(session_handle, db, magnet_statuses)
 	
-	# can't get add_torrent to work with infohash
-	#
-	# btih_bytes = binascii.unhexlify(btih)
-	# btih_str = btih_bytes.decode('raw_unicode_escape')
-	# infohash = libtorrent.sha1_hash(btih_bytes)
-	#torrent_handle = session_handle.add_torrent({
-	#    'save_path': save_path,
-	#    'infohash': infohash
-	#})
 
-	# putting it in a magnet URL works
-	torrent_handle = session_handle.add_torrent({
-		'save_path': os.path.join(save_path, btih),
-		'url': 'magnet:?xt=urn:btih:' + btih,
-		'storage_mode': libtorrent.storage_mode_t.storage_mode_allocate
-	})
+	# try https://torcache.net/torrent/{btih}.torrent if possible to avoid waiting for metadata
+	torrent_data_requrest = requests.get('http://torcache.net/torrent/'+btih+'.torrent', headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0'})
+	if (len(torrent_data_requrest.content)):
+		
+		torrent_data = libtorrent.bdecode(torrent_data_requrest.content)
+		#print(torrent_data)
+		torrent_info = libtorrent.torrent_info(torrent_data)
+		
+		print(btih, 'adding torrent file')
+	
+		# @todo better way than just re-adding it?  
+		torrent_handle = session_handle.add_torrent({
+			'save_path': os.path.join(save_path, btih),
+			#'url': 'magnet:?xt=urn:btih:' + btih,
+			'storage_mode': libtorrent.storage_mode_t.storage_mode_allocate,
+			'ti': torrent_info
+		})
+		
+	# fallback to just adding the btih and let DHT do it's magic
+	else:
+			
+		# can't get add_torrent to work with infohash
+		#
+		# btih_bytes = binascii.unhexlify(btih)
+		# btih_str = btih_bytes.decode('raw_unicode_escape')
+		# infohash = libtorrent.sha1_hash(btih_bytes)
+		#torrent_handle = session_handle.add_torrent({
+		#    'save_path': save_path,
+		#    'infohash': infohash
+		#})
+
+		# putting it in a magnet URL works
+		torrent_handle = session_handle.add_torrent({
+			'save_path': os.path.join(save_path, btih),
+			'url': 'magnet:?xt=urn:btih:' + btih,
+			'storage_mode': libtorrent.storage_mode_t.storage_mode_allocate
+		})
+		
 
 	# add some udp trackers
 	for url in default_trackers:
@@ -240,24 +262,8 @@ def start_streaming_magnet_file(session_handle, save_path, btih, video_filename,
 	torrent_handle.force_dht_announce()
 	torrent_handle.set_sequential_download(True)
 
-
 	print(btih, 'waiting for torrent metadata')
 
-
-	# use https://torcache.net/torrent/{btih}.torrent if possible to avoid waiting for metadata
-	torrent_data_requrest = requests.get('http://torcache.net/torrent/'+btih+'.torrent', headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0'})
-	if (len(torrent_data_requrest.content)):
-		torrent_data = libtorrent.bdecode(torrent_data_requrest.content)
-		#print(torrent_data)
-		torrent_info = libtorrent.torrent_info(torrent_data)
-		
-		# @todo better way than just re-adding it?  
-		torrent_handle = session_handle.add_torrent({
-			'save_path': os.path.join(save_path, btih),
-			'url': 'magnet:?xt=urn:btih:' + btih,
-			'storage_mode': libtorrent.storage_mode_t.storage_mode_allocate,
-			'ti': torrent_info
-		})
 	
 
 	# @todo don't wait forever
@@ -428,7 +434,7 @@ def find_episode_number_in_file_path(file_path, series_title=None):
 
 # process magnet_file actions
 def process_queue(session_handle, save_path, db, magnet_statuses):
-	print('process_queue')
+	#print('process_queue')
 
 	# find videos queued to start streaming
 	dbc = db.execute("""
@@ -443,8 +449,6 @@ JOIN
 			magnet.id = magnet_file.magnet_id
 WHERE
 	magnet_file.status_id = :status_id_start_watching
-OR
-	1
 """, {
 	'status_id_start_watching': magnet_statuses['start watching']
 })

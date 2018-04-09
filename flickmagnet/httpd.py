@@ -31,174 +31,21 @@ class RootController:
   @cherrypy.expose
   def search(self, q=None, genre=[]):
 
-    sql_movie_filter = sql_episode_filter = sql_series_filter = "1"
-
-    query_params = {
-      'type_id_movie': cherrypy.thread_data.settings['cached_tables']['entity_type']['movie'],
-      'type_id_episode': cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
-    }
-
-    deep_search_running = False
-
     if q is not None and len(q):
 
-      # tell spiderd to find titles with this match
       dbc = cherrypy.thread_data.db.execute("""
 SELECT
   *
 FROM
-  search_query
-WHERE
-  query = ?
-""", [
-  q
-])
-      cherrypy.thread_data.db.commit()
-
-      # first time query, spider it
-      if dbc.fetchone() is None:
-
-        deep_search_running = True
-
-        # tell spiderd to find titles with this match
-        cherrypy.thread_data.db.execute("""
-INSERT OR IGNORE INTO
-  search_query
-(
-  query
-)
-VALUES
-(
-  ?
-)
-""", [
-  q
-  ])
-        cherrypy.thread_data.db.commit()
-
-      query = '%'+q+'%'
-      sql_movie_filter += " AND movie.name LIKE :query "
-      sql_episode_filter += " AND 'S' ||  season.number || 'E' || episode.number LIKE :query "
-      sql_series_filter += " AND series.name LIKE :query "
-
-      query_params['query'] = query
-
-    # for one genre, convert to list so it's the same as multiple genres
-    if isinstance(genre, str):
-      genre = [genre]
-
-    if isinstance(genre, list) and len(genre):
-      for k,v in enumerate(genre):
-        sql_movie_filter += """
-  AND EXISTS
-(
-SELECT
-  *
-FROM
-  movie_genre
-JOIN
-  genre
-    ON
-      genre.id = movie_genre.genre_id
-    AND
-      genre.name = :genre_"""+str(k)+"""_name
-WHERE
-  movie_genre.movie_id = movie.id
-)
-"""
-        query_params['genre_'+str(k)+'_name'] = v
-
-    dbc = cherrypy.thread_data.db.execute("""
-SELECT
-  type,
-  id,
-  name,
-  release_year,
-  synopsis
-FROM
-
-(
-
-SELECT
-  'movie' type,
-  movie.id,
-  movie.name,
-  movie.release_year,
-  movie.synopsis
-FROM
   movie
 WHERE
-  """ + sql_movie_filter + """
-AND
-  EXISTS
-(
-SELECT
-  *
-FROM
-  magnet_file
-WHERE
-  magnet_file.entity_type_id = :type_id_movie
-AND
-  magnet_file.entity_id = movie.id
-)
+  title like :query
+""", {
+  'query': '%' + q + '%'
+})
+      results = dbc.fetchall()
 
-UNION
-
-SELECT
-  'episode' type,
-  episode.id,
-  series.name || ' S' ||  season.number || ' E' || episode.number name,
-  NULL release_year,
-  episode.synopsis
-FROM
-  episode
-JOIN
-  season
-    ON
-      season.id = episode.season_id
-JOIN
-  series
-    ON
-      series.id = season.series_id
-WHERE
-  """ + sql_episode_filter + """
-AND
-  EXISTS
-(
-SELECT
-  *
-FROM
-  magnet_file
-WHERE
-  magnet_file.entity_type_id = :type_id_episode
-AND
-  magnet_file.entity_id = episode.id
-)
-
-UNION
-
-SELECT
-  'series' type,
-  series.id,
-  series.name,
-  NULL release_year,
-  series.synopsis
-FROM
-  series
-WHERE
-  """ + sql_series_filter + """
-
-)
-
-ORDER BY
-  'series' <> type,
-  'movie' <> type,
-  id DESC
-""", query_params)
-
-    results = dbc.fetchall()
-
-    return lookup.get_template("results.html").render(results=results, deep_search_running=deep_search_running)
+      return lookup.get_template("results.html").render(results=results)
 
 
   # browse movies
@@ -213,32 +60,11 @@ SELECT
   movie.*
 FROM
   movie
-WHERE
-(
-  movie.release_year < %d
-OR
-  movie.public_domain = 1
-)
-AND
-  EXISTS
-(
-SELECT
-  *
-FROM
-  magnet_file
-WHERE
-  magnet_file.entity_type_id = %d
-AND
-  magnet_file.entity_id = movie.id
-)
 ORDER BY
   movie.id DESC
 LIMIT
   50
-""" % (
-  date.today().year + 1 - cherrypy.thread_data.settings['copyright_length'],
-  cherrypy.thread_data.settings['cached_tables']['entity_type']['movie']
-))
+""")
 
     new_movies = dbc.fetchall()
 
@@ -259,38 +85,24 @@ LIMIT
 
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
-  episode.*,
-  season.number season_number,
+  series_season_episode.*,
+  season_episode.number season_number,
   series.name series_name
 FROM
-  episode
+  series_season_episode
 JOIN
   season
     ON
-      season.id = episode.season_id
+      season.id = series_season_episode.season_id
 JOIN
   series
     ON
-      series.id = season.series_id
-WHERE
-  EXISTS
-(
-SELECT
-  *
-FROM
-  magnet_file
-WHERE
-  magnet_file.entity_type_id = %d
-AND
-  magnet_file.entity_id = episode.id
-)
+      series.id = series_season.series_id
 ORDER BY
   episode.id DESC
 LIMIT
   50
-""" % (
-  cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
-))
+""")
     new_episodes = dbc.fetchall()
 
     return page_template.render(
@@ -304,9 +116,6 @@ LIMIT
 
   @cherrypy.expose
   def entity(self, entity_type, entity_id):
-
-    entity_type_id = cherrypy.thread_data.settings['cached_tables']['entity_type'][entity_type]
-
 
     if 'series' == entity_type:
 
@@ -338,15 +147,15 @@ SELECT
 FROM
   magnet_file
 JOIN
-  episode
+  series_season_episode
     ON
       :type_id_episode = magnet_file.entity_type_id
     AND
-      episode.id = magnet_file.entity_id
+      series_season_episode.id = magnet_file.entity_id
 JOIN
-  season
+  series_season
     ON
-      season.id = episode.season_id
+      series_season.id = series_season_episode.season_id
 WHERE
   season.series_id = :series_id
 GROUP BY
@@ -354,10 +163,7 @@ GROUP BY
 ORDER BY
   season.number,
   episode.number
-""", {
-  'series_id': entity_id,
-  'type_id_episode': cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
-})
+""")
 
         episodes = dbc.fetchall()
 
@@ -400,7 +206,6 @@ SET
 WHERE
   id = %d
 """ % (
-  cherrypy.thread_data.settings['cached_tables']['magnet_file_status']['start watching'],
   magnet_file['id']
 ))
       cherrypy.thread_data.db.commit()
@@ -421,8 +226,6 @@ WHERE
 
   @cherrypy.expose
   def play(self, entity_type, entity_id):
-
-    entity_type_id = cherrypy.thread_data.settings['cached_tables']['entity_type'][entity_type]
 
     page_template = lookup.get_template("play.html")
 
@@ -453,7 +256,6 @@ SET
 WHERE
   id = %d
 """ % (
-  cherrypy.thread_data.settings['cached_tables']['magnet_file_status']['start watching'],
   magnet_file['id']
 ))
       cherrypy.thread_data.db.commit()
@@ -549,7 +351,6 @@ ORDER BY
   episode.number
 """, {
   'series_id': series_id,
-  'type_id_episode': cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
 })
 
     episodes = []
@@ -615,7 +416,6 @@ SET
 WHERE
   id = %d
 """ % (
-  cherrypy.thread_data.settings['cached_tables']['magnet_file_status']['start watching'],
   magnet_file['id']
 ))
       cherrypy.thread_data.db.commit()

@@ -1,44 +1,45 @@
 <%inherit file="base.html"/>
 
-<div class="container">
+<div class="container mt-3">
+  <h1>Movies</h1>
 
 % for r in movies:
-    <div class="media">
-      <div class="media-left media-middle">
-        <a href="#">
-          <img src="/t/${r['id']}.jpg" alt="" style="width:217px;">
-        </a>
-      </div>
-      <div class="media-body">
+  <div class="media">
+    <div class="media-left media-middle">
+    <a href="#">
+      <img src="/t/${r['id']}.jpg" alt="" style="width:217px;">
+    </a>
+    </div>
+    <div class="media-body">
 
 <h4 class="media-heading">
 ${r['name'] | h}
 % if r['release_year']:
-     (${r['release_year']})
+   (${r['release_year']})
 % endif
 </h4>
 
 <p>${r['synopsis'] | h}</p>
 
 <div class="btn-group-vertical" role="group" aria-label="...">
-    <a class="btn btn-default" href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}/" target="_blank">
-        IMDB
-        <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
-    </a>
-    <!--
-    <a class="btn btn-default" href="" target="_blank">
-        Trailer
-        <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
-    </a>
-    -->
-    <a class="btn btn-success" href="/play?entity_type=movie&amp;entity_id=${r['id']}" target="_blank">
-        Play
-        <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
-    </a>
+  <a class="btn btn-default" href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}/" target="_blank">
+    IMDB
+    <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+  </a>
+  <!--
+  <a class="btn btn-default" href="" target="_blank">
+    Trailer
+    <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+  </a>
+  -->
+  <a class="btn btn-success" href="/play?entity_type=movie&amp;entity_id=${r['id']}" target="_blank">
+    Play
+    <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
+  </a>
 </div>
 
-      </div>
     </div>
+  </div>
 
 % endfor
 

@@ -1,83 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Flick Magnet</title>
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
-    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <meta name="description" content="Torrent media browser.">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-<nav class="navbar navbar-default">
-  <div class="container-fluid">
-    <!-- Brand and toggle get grouped for better mobile display -->
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container">
 <%!
 import config
 brand_name = config.settings['server']['name'] + ' ' + config.settings['server']['version']
 %>
-      <a class="navbar-brand" href="/">${brand_name}</a>
-    </div>
-
-    <!-- Collect the nav links, forms, and other content for toggling -->
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-      <ul class="nav navbar-nav">
-        <li><a href="/movies">Movies</a></li>
-        <li><a href="/tv">TV Shows</a></li>
-        <li class="dropdown">
-          <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">By Genre <span class="caret"></span></a>
-
-<ul class="dropdown-menu">
+        <a class="navbar-brand" href="/">${brand_name}</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <form class="form-inline" action="/search">
+                <input class="form-control mr-sm-2" type="search" name="q" placeholder="Search...">
+              </form>
+            </li>
+            <!--
+            <li class="nav-item active">
+              <a class="nav-link" href="/">Home
+                <span class="sr-only">(current)</span>
+              </a>
+            </li>
+            -->
+            <li class="nav-item">
+              <a class="nav-link" href="/movies">Movies</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/tv">TV Series</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">Genres</a>
+              <div class="dropdown-menu">
 <%
 import config
 db = config.db_connect()
 dbc = db.execute("""
 SELECT
-    *
+  *
 FROM
-    genre
+  genre
 """)
 genres = dbc.fetchall()
 %>
 % for genre in genres:
-    <li><a href="/search?genre=${genre['name'] | u}">${genre['name'] | h}</a></li>
+  <a class="dropdown-item" href="/search?genre=${genre['name'] | u}">${genre['name'] | h}</a>
 % endfor
-</ul>
-
-        </li>
-      </ul>
-      <form class="navbar-form navbar-left" role="search" action="/search">
-        <div class="form-group">
-          <input type="search" name="q" class="form-control" placeholder="Search by Title" autofocus>
-        </div>
-        <button type="submit" class="btn btn-default">Search</button>
-      </form>
-      <ul class="nav navbar-nav navbar-right">
-        <li><a href="/history">History</a></li>
-        <li><a href="/status">Status</a></li>
-        <li class="dropdown">
-          <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Help <span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <li><a href="https://github.com/acerix/flickmagnet/blob/master/README.md" target="_blank">Documentation</a></li>
-            <li><a href="https://github.com/acerix/flickmagnet/issues/new" target="_blank">Report Issue</a></li>
-            <li><a href="https://github.com/acerix/flickmagnet" target="_blank">Source Code</a></li>
-            <li><a href="http://FlickMag.net/" target="_blank">Project Homepage</a></li>
+              </div>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/history">History</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/status">Status</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">
+                Links
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="https://github.com/acerix/flickmagnet/blob/master/README.md" target="_blank">Documentation</a>
+                <a class="dropdown-item" href="https://github.com/acerix/flickmagnet/issues/new" target="_blank">Report Issue</a>
+                <a class="dropdown-item" href="https://github.com/acerix/flickmagnet" target="_blank">Source Code</a>
+                <a class="dropdown-item" href="http://FlickMag.net/" target="_blank">Project Homepage</a>
+              </div>
+            </li>
           </ul>
-        </li>
-      </ul>
-    </div><!-- /.navbar-collapse -->
-  </div><!-- /.container-fluid -->
-</nav>
-
-${self.body()}
-
-</body>
+        </div>
+      </div>
+    </nav>
+    ${self.body()}
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.bundle.min.js"></script>
+  </body>
 </html>

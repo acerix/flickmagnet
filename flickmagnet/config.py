@@ -2,7 +2,7 @@
 import os
 import math
 import shutil
-import pytoml
+import toml
 import socket
 
 import ctypes
@@ -26,13 +26,11 @@ config_file = os.path.join(config_dir, 'config.toml')
 
 
 # load config file
-
 if not os.path.isfile(config_file):
     shutil.copyfile(os.path.join(package_dir, 'examples', 'config.toml'), config_file)
 
 with open(config_file) as config_file_object:
-    settings = pytoml.load(config_file_object)
-
+    settings = toml.load(config_file_object)
 
 
 # copy version number to settings
@@ -41,35 +39,13 @@ settings['server']['version'] = __version__
 
 
 # where downloads are stored
-
 settings['server']['download_dir'] = cache_dir
 
-
-
 # where pid file is stored
-
 settings['server']['runtime_dir'] = runtime_dir
 
-
-
 # where htdocs are stored
-
 settings['server']['htdocs_dir'] = os.path.join(package_dir, 'htdocs')
-
-
-# where cover images are stored
-
-settings['server']['thumbnail_dir'] = os.path.join(data_dir, 'thumbnail')
-
-if not os.path.exists(settings['server']['thumbnail_dir']):
-    os.makedirs(settings['server']['thumbnail_dir'])
-
-
-# file to store libtorrent state
-
-settings['server']['libtorrent_state_file'] = os.path.join(cache_dir, 'libtorrent_state_file.tmp')
-
-
 
 
 # get a host name if not defined
@@ -83,7 +59,7 @@ if 'http_host' not in settings['server']:
 
     # gets the local network IP, others on the network can connect to this
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(('flickmag.net',80))
+    s.connect(('www.google.com',80))
     settings['server']['http_host'] = s.getsockname()[0]
     s.close()
 
@@ -114,70 +90,55 @@ else:
     torrent_sock.bind(('0.0.0.0', 0))
     settings['server']['torrent_port'] = torrent_sock.getsockname()[1]
 
-# @todo would be better to keep open
+# @todo should keep these open
 http_sock.close()
 torrent_sock.close()
 
 
 
 def get_free_space(dirname):
-    """Return folder/drive free space in bytes"""
-    if 'Windows'==platform.system():
-        free_bytes = ctypes.c_ulonglong(0)
-        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(dirname), None, None, ctypes.pointer(free_bytes))
-        return free_bytes.value
-    else:
-        st = os.statvfs(dirname)
-        return st.f_bavail * st.f_frsize
-
+  """Return folder/drive free space in bytes"""
+  if 'Windows'==platform.system():
+    free_bytes = ctypes.c_ulonglong(0)
+    ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(dirname), None, None, ctypes.pointer(free_bytes))
+    return free_bytes.value
+  else:
+    st = os.statvfs(dirname)
+    return st.f_bavail * st.f_frsize
 
 
 # default number of days to keep videos is number of free gigabytes in download dir, rounded up
 if 'video_cache_days' not in settings['server']:
-    settings['server']['video_cache_days'] = math.ceil(get_free_space(settings['server']['download_dir']) / 1073741824)
+  settings['server']['video_cache_days'] = math.ceil(get_free_space(settings['server']['download_dir']) / 1073741824)
+
 
 # database just initialized?
 settings['server']['first_run'] = False
 
-# define database connection
 
+# define database connection
 import sqlite3
 
 def db_connect():
-    db = sqlite3.connect( os.path.join(data_dir, app_name + '.db') )
-    db.row_factory = sqlite3.Row
-
-    # initialize tables if none exist
-    table_count = db.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
-    if table_count is 0:
-        settings['server']['first_run'] = True
-        f = open(os.path.join(package_dir, 'examples', 'db.sql'),'r')
-        db.executescript(f.read())
-
-    return db
+  db = sqlite3.connect( os.path.join(data_dir, app_name + '.db') )
+  db.row_factory = sqlite3.Row
+  return db
 
 
+# test db connection
+db = db_connect()
 
-# cache the name:id of each table row in a hash table
-def db_table_to_name_dict(table_name, key_column='name', value_column='id'):
-    db = db_connect()
-    result = {}
-    for row in db.execute("""
-SELECT
-    `"""+key_column+"""` k,
-    `"""+value_column+"""` v
-FROM
-    `"""+table_name+"""`
-ORDER BY
-    `"""+key_column+"""`
-"""):
-        result[row['k']] = row['v']
+# initialize tables if none exist
+table_count = db.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
 
-    return result
+if table_count is 0:
+  settings['server']['first_run'] = True
+  print('Initializing database...')
 
-# cached tables
-settings['server']['cached_tables'] = {}
-settings['server']['cached_tables']['entity_type'] = db_table_to_name_dict('entity_type');
-settings['server']['cached_tables']['entity_status'] = db_table_to_name_dict('entity_status');
-settings['server']['cached_tables']['magnet_file_status'] = db_table_to_name_dict('magnet_file_status');
-settings['server']['cached_tables']['tag'] = db_table_to_name_dict('tag');
+  # download media-torrent-db schema
+  import urllib.request
+  with urllib.request.urlopen('https://raw.githubusercontent.com/acerix/media-torrent-db/master/schema.sql') as f:
+    schema_sql = f.read().decode('utf-8')
+
+  # add to the database
+  db.executescript(schema_sql)

@@ -43,12 +43,12 @@ dbc = db.execute("""
 SELECT
     *
 FROM
-    tag
+    genre
 """)
-tags = dbc.fetchall()
+genres = dbc.fetchall()
 %>
-% for tag in tags:
-    <li><a href="/search?tag=${tag['name'] | u}">${tag['name'] | h}</a></li>
+% for genre in genres:
+    <li><a href="/search?genre=${genre['name'] | u}">${genre['name'] | h}</a></li>
 % endfor
 </ul>
 

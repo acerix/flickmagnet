@@ -1,46 +1,24 @@
 
 =  Building Flick Magnet for Windows =
 
-Install Visual C++ 2008 (9.0)
-
-    https://go.microsoft.com/?linkid=7729279
-    
-    This is required for boost
-
-Install Python 2
+Install Python 3
 
     https://www.python.org/downloads/windows/
-    
-    Python 3 should also work, if you can get libtorrent installed...
-
-Install boost
-
-    http://www.boost.org/users/download/#live
-    
-    Create a text file user-config.jam in %HOMEDRIVE%%HOMEPATH%, and specify the compiler:
-	
-		using msvc: 9.0;
-
-Install py-libtorrent
-
-    This should get installed by setup.py, if boost and python2 are installed first
-
-    http://sourceforge.net/projects/libtorrent/files/py-libtorrent/
 
 Install Flick Magnet
 
-	https://github.com/acerix/flickmagnet/archive/master.zip
+  https://github.com/acerix/flickmagnet/archive/master.zip
 
-    \python27\python.exe setup.py install
+    python.exe setup.py install
 
 Install PyInstaller
 
-    \python27\Scripts\pip.exe install pyinstaller
-    
+    pip.exe install pyinstaller
+
     http://www.pyinstaller.org/
 
 Build package with PyInstaller
 
-    \Python27\Scripts\pyinstaller.exe --onefile --upx-dir=\upx391w --icon=htdocs/favicon.ico flickmagnet.py
+    pyinstaller.exe --onefile --upx-dir=\upx391w --icon=htdocs/favicon.ico flickmagnet.py
 
     Install upx for a compressed binary, dir specified in: --upx-dir

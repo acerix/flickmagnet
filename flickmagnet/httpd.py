@@ -152,7 +152,8 @@ LIMIT
 
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
-  id
+  id,
+  title
 FROM
   movie
 WHERE
@@ -165,7 +166,8 @@ WHERE
     if movie:
 
       return page_template.render(
-        title_id = title_id
+        title_id = title_id,
+        title = movie['title'],
       )
 
     return 'title not found'
@@ -197,7 +199,9 @@ WHERE
 
       return page_template.render(
         title = 'Watch Video',
-        title_id = title_id
+        movie_id = movie['id'],
+        title_id = title_id,
+        video_url = 'https://www.quirksmode.org/html5/videos/big_buck_bunny.mp4'
       )
 
 

@@ -2,23 +2,21 @@
 
 <div class="container mt-3">
 
-  <div class="panel panel-default">
-    <div class="panel-heading">${title}</div>
-    <div class="panel-body">
-    <p>You'll probably get better results by using "Open in Video Player" to stream with a video player like <a href="http://www.videolan.org/">VLC</a> instead of playing in your browser.</p>
-
-    <div class="btn-group" role="group" aria-label="...">
-      <a class="btn btn-default" href="/stream?magnet_file_id=${magnet_file_id}">Download Video</a>
-      <a class="btn btn-default" href="/xspf?magnet_file_id=${magnet_file_id}">Open in Video Player</a>
-    </div>
-
-    </div>
+  <div class="embed-responsive embed-responsive-16by9">
+    <video controls preload="auto" autoplay poster="http://imgdb.pow7.com/title/tt${ format(movie_id, '07') }/poster.jpeg">
+      <source src="${video_url}" type="video/mp4">
+    </video>
   </div>
 
-  <div class="embed-responsive embed-responsive-16by9">
-    <video controls preload="auto" autoplay poster="/t/${title_id}.jpg">
-      <source src="/stream?magnet_file_id=${magnet_file_id}" type="video/mp4">
-    </video>
+  <br>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="btn-group" role="group" aria-label="...">
+        <a class="btn btn-default" href="/stream?id=${movie_id}">Download Video</a>
+        <a class="btn btn-default" href="/xspf?id=${movie_id}">Open in Video Player</a>
+      </div>
+    </div>
   </div>
 
 </div>

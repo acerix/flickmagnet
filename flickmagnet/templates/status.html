@@ -2,5 +2,11 @@
 
 <div class="container mt-3">
   <h1>Status</h1>
-  <p>Online</p>
+  <div class="alert alert-success">
+    <span>Online</span>
+  </div>
+<%!
+import datetime
+%>
+  <pre>${ datetime.datetime.now() }</pre>
 </div>

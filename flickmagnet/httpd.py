@@ -29,23 +29,53 @@ class RootController:
   # search
 
   @cherrypy.expose
-  def search(self, q=None, genre=[]):
+  def search(self, q=None, genre=None):
+
+    # @todo search for multiple params at the same time
 
     if q is not None and len(q):
-
       dbc = cherrypy.thread_data.db.execute("""
 SELECT
   *
 FROM
   movie
 WHERE
-  title like :query
+  title LIKE :query
 """, {
   'query': '%' + q + '%'
 })
       results = dbc.fetchall()
+      return lookup.get_template("results.html").render(results=results, q=q)
 
+    if genre is not None:
+      dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  *
+FROM
+  movie
+WHERE
+  EXISTS
+  (
+  SELECT
+    *
+  FROM
+    movie_genre
+  JOIN
+    genre
+      ON
+        genre.id = movie_genre.genre_id
+  WHERE
+    genre.name = :genre_name
+  AND
+    movie_genre.movie_id = movie.id
+  )
+""", {
+  'genre_name': genre
+})
+      results = dbc.fetchall()
       return lookup.get_template("results.html").render(results=results)
+
+    return lookup.get_template("results.html").render(results=[])
 
 
   # browse movies
@@ -86,20 +116,21 @@ LIMIT
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
   series_season_episode.*,
-  season_episode.number season_number,
-  series.name series_name
+  series_season_episode.number season_number,
+  series.title series_title,
+  series.id series_id
 FROM
   series_season_episode
 JOIN
-  season
+  series_season
     ON
-      season.id = series_season_episode.season_id
+      series_season.id = series_season_episode.series_season_id
 JOIN
   series
     ON
       series.id = series_season.series_id
 ORDER BY
-  episode.id DESC
+  series_season_episode.id DESC
 LIMIT
   50
 """)
@@ -112,111 +143,32 @@ LIMIT
 
 
 
-  # entity info page
+  # title info page
 
   @cherrypy.expose
-  def entity(self, entity_type, entity_id):
+  def title(self, title_id):
 
-    if 'series' == entity_type:
-
-      page_template = lookup.get_template("series.html")
-
-      dbc = cherrypy.thread_data.db.execute("""
-SELECT
-  *
-FROM
-  series
-WHERE
-  id = ?
-""", [
-  entity_id
-])
-
-      series = dbc.fetchone()
-
-      if series:
-
-        dbc = cherrypy.thread_data.db.execute("""
-SELECT
-  season.number season_number,
-  'Season ' || season.number season_name,
-  episode.number episode_number,
-  'Episode ' || episode.number name,
-  magnet_file.id magnet_file_id,
-  episode.seconds_long
-FROM
-  magnet_file
-JOIN
-  series_season_episode
-    ON
-      :type_id_episode = magnet_file.entity_type_id
-    AND
-      series_season_episode.id = magnet_file.entity_id
-JOIN
-  series_season
-    ON
-      series_season.id = series_season_episode.season_id
-WHERE
-  season.series_id = :series_id
-GROUP BY
-  episode.id
-ORDER BY
-  season.number,
-  episode.number
-""")
-
-        episodes = dbc.fetchall()
-
-        return page_template.render(
-          series = series,
-          episodes = episodes,
-        )
-
-      return 'series not found'
-
-
-
-
-    page_template = lookup.get_template("entity.html")
+    page_template = lookup.get_template("title.html")
 
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
   id
 FROM
-  magnet_file
+  movie
 WHERE
-  entity_type_id = ?
-AND
-  entity_id = ?
+  id = ?
 """, [
-  entity_type_id,
-  entity_id
+  title_id
 ])
+    movie = dbc.fetchone()
 
-    magnet_file = dbc.fetchone()
-
-    if magnet_file:
-
-      # set torrent to start streaming
-      dbc = cherrypy.thread_data.db.execute("""
-UPDATE
-  magnet_file
-SET
-  status_id = %d
-WHERE
-  id = %d
-""" % (
-  magnet_file['id']
-))
-      cherrypy.thread_data.db.commit()
+    if movie:
 
       return page_template.render(
-        title = entity_type + ' #' + entity_id,
-        entity_id = entity_id,
-        magnet_file_id = magnet_file['id']
+        title_id = title_id
       )
 
-    return 'no magnets found'
+    return 'title not found'
 
 
 
@@ -225,7 +177,7 @@ WHERE
   # video player
 
   @cherrypy.expose
-  def play(self, entity_type, entity_id):
+  def play(self, title_id):
 
     page_template = lookup.get_template("play.html")
 
@@ -233,148 +185,23 @@ WHERE
 SELECT
   id
 FROM
-  magnet_file
+  movie
 WHERE
-  entity_type_id = ?
-AND
-  entity_id = ?
+  id = ?
 """, [
-  entity_type_id,
-  entity_id
+  title_id
 ])
+    movie = dbc.fetchone()
 
-    magnet_file = dbc.fetchone()
-
-    if magnet_file:
-
-      # set torrent to start streaming
-      dbc = cherrypy.thread_data.db.execute("""
-UPDATE
-  magnet_file
-SET
-  status_id = %d
-WHERE
-  id = %d
-""" % (
-  magnet_file['id']
-))
-      cherrypy.thread_data.db.commit()
+    if movie:
 
       return page_template.render(
         title = 'Watch Video',
-        entity_id = entity_id,
-        magnet_file_id = magnet_file['id']
+        title_id = title_id
       )
 
 
     return 'no magnets found'
-
-
-
-  # generate an xspf playlist for the magnet_file video
-
-  @cherrypy.expose
-  def xspf(self, magnet_file_id):
-
-    magnet_file_id = int(magnet_file_id)
-
-    dbc = cherrypy.thread_data.db.execute("""
-SELECT
-  *
-FROM
-  magnet_file
-WHERE
-  id = ?
-""", [
-  magnet_file_id
-])
-
-    magnet_file = dbc.fetchone()
-
-    page_template = lookup.get_template("magnet_file.xspf")
-
-    location = 'http://%s:%d/stream?magnet_file_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], magnet_file_id)
-
-    cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
-    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flick.xspf"'
-
-    return str.encode(page_template.render(location=location))
-
-
-
-  # generate an xspf playlist every season/episode in a series
-
-  @cherrypy.expose
-  def series_xspf(self, entity_id):
-
-    series_id = int(entity_id)
-
-    dbc = cherrypy.thread_data.db.execute("""
-SELECT
-  *
-FROM
-  series
-WHERE
-  id = ?
-""", [
-  series_id
-])
-
-    series = dbc.fetchone()
-
-    page_template = lookup.get_template("series.xspf")
-
-    dbc = cherrypy.thread_data.db.execute("""
-SELECT
-  'Season ' || substr('0'||season.number, -2, 2) season_name,
-  'Episode ' || substr('0'||episode.number, -2, 2) name,
-  magnet_file.id magnet_file_id,
-  episode.seconds_long
-FROM
-  magnet_file
-JOIN
-  episode
-    ON
-      :type_id_episode = magnet_file.entity_type_id
-    AND
-      episode.id = magnet_file.entity_id
-JOIN
-  season
-    ON
-      season.id = episode.season_id
-WHERE
-  season.series_id = :series_id
-GROUP BY
-  episode.id
-ORDER BY
-  season.number,
-  episode.number
-""", {
-  'series_id': series_id,
-})
-
-    episodes = []
-
-    for r in dbc.fetchall():
-      episodes.append({
-        'season_name': r['season_name'],
-        'name': r['name'],
-        'location': 'http://%s:%d/stream?magnet_file_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], r['magnet_file_id']),
-        'duration': 0 if r['seconds_long'] is None else r['seconds_long'] * 1000
-      })
-
-    if len(episodes) == 0:
-      return 'no episodes found yet'
-
-    #cherrypy.response.headers['Content-Type'] = 'text/plain'
-    cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
-    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="series.xspf"'
-
-    return str.encode(page_template.render(
-      series_name = series['name'],
-      episodes = episodes
-    ))
-
 
 
   # stream a video
@@ -423,84 +250,6 @@ WHERE
 
 
 
-    # wait for torrent metadata to be downloaded and video file to be located
-    for n in range(30):
-
-      dbc = cherrypy.thread_data.db.execute("""
-SELECT
-  magnet_file.*,
-  magnet.btih,
-  4 torrent_status
-FROM
-  magnet_file
-JOIN
-  magnet
-    ON
-      magnet.id = magnet_file.magnet_id
-WHERE
-  magnet_file.id = ?
-""", [
-  magnet_file_id
-])
-
-      magnet_file = dbc.fetchone()
-
-      if magnet_file and len(magnet_file['filename']):
-        break
-
-      print('httpd: waiting for torrent metadata  ')
-
-      time.sleep(n)
-
-
-
-
-    video_filename = os.path.join(cherrypy.thread_data.settings['download_dir'], magnet_file['btih'], magnet_file['filename'])
-
-    # wait for video file to start downloading
-    for n in range(30):
-      if os.path.isfile(video_filename):
-        break
-      print('httpd: waiting for video to start downloading')
-      time.sleep(n)
-
-
-    cherrypy.response.headers['Content-Type'] = 'video/mpeg'
-    cherrypy.response.headers['Content-Length'] = os.path.getsize(video_filename)
-
-
-    # if download is complete, output as a static file
-    # if finished or seeding:
-    #if magnet_file['torrent_status'] == 4 or magnet_file['torrent_status'] == 5:
-    return serve_file(video_filename, content_type='video/mpeg')
-
-
-
-    # @todo need to accept ranges so video players can seek
-    #cherrypy.response.headers['Accept-Ranges'] = 'bytes'
-
-
-    # for now, this will never be reached... we just send zeroes to the browser for any parts not downloaded yet
-
-    # torrent_handle::file_progress   ?
-
-    # switch to streaming mode
-    cherrypy.response.stream = True
-
-    #chunk_size = magnet_file.chunk_size
-
-    # yields chunks of data or sleeps until data is available
-    def video_stream_or_block():
-      # @todo start at beginning or range
-      # @todo foreach (block): if (downloaded) yield, else sleep
-      yield "Hello, "
-      yield "world"
-
-    return video_stream_or_block()
-
-
-
-
   # recently watched videos
 
   @cherrypy.expose
@@ -545,8 +294,7 @@ def start(settings, db_connect):
   # Tell CherryPy to call "connect" for each thread, when it starts up
   cherrypy.engine.subscribe('start_thread', connect)
 
-  print('httpd starting on port', settings['http_port'])
-
+  # print('httpd starting on port', settings['http_port'])
 
   cherrypy.quickstart(
     RootController(),

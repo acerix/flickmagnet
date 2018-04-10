@@ -1,38 +1,46 @@
 <%inherit file="base.html"/>
 
 <div class="container mt-3">
-  <h1>TV Shows</h1>
 
 % if not len(episodes):
   <p>No results found, try searching.</p>
 % endif
 
 % for r in episodes:
-  <div class="media">
-    <div class="media-left media-middle">
-    <a href="#">
-      <img src="/t/${r['id']}.jpg" alt="" style="width:217px;">
-    </a>
+  <div class="card">
+    <div class="card-header">
+      <a href="/title?title_id=${r['id']}">
+      ${r['title'] | h}
+      </a>
     </div>
-    <div class="media-body">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-lg-10 col-sm-8 col-6">
+          <p>${r['synopsis'] | h}</p>
+          <div class="btn-group-vertical" role="group" aria-label="...">
 
-<h4 class="media-heading">${r['series_name'] | h} ${'S{0:02d}E{1:02d}'.format(r['season_number'], r['number'])}</h4>
-<p>${r['synopsis'] | h}</p>
+            <a class="btn btn-default" href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['series_id'])}/" target="_blank">
+              IMDB
+              <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+            </a>
 
-<div class="btn-group-vertical" role="group" aria-label="...">
-  <a class="btn btn-default" href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}/" target="_blank">
-    IMDB
-    <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
-  </a>
-  <a class="btn btn-success" href="/play?entity_type=movie&amp;entity_id=${r['id']}" target="_blank">
-    Play
-    <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
-  </a>
-</div>
+          % if 1:
+            <a class="btn btn-success" href="/play?title_id=${r['id']}" target="_blank">
+              Play
+              <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
+            </a>
+          % endif
 
+          </div>
+
+        </div>
+        <div class="col-lg-2 col-sm-4 col-6">
+          <img src="http://imgdb.pow7.com/title/tt${ format(r['series_id'], '07') }/poster.jpeg" alt="" class="img-fluid">
+        </div>
+      </div>
     </div>
   </div>
-
+  <br>
 % endfor
 
 </div>

@@ -23,7 +23,11 @@ brand_name = config.settings['server']['name'] + ' ' + config.settings['server']
           <ul class="navbar-nav ml-auto">
             <li class="nav-item">
               <form class="form-inline" action="/search">
-                <input class="form-control mr-sm-2" type="search" name="q" placeholder="Search...">
+<%
+# @todo get actual search query
+search_query = self.attr.q if hasattr(self.attr, 'q') else ''
+%>
+                <input class="form-control mr-sm-2" type="search" name="q" placeholder="Search..." value="${search_query | h}">
               </form>
             </li>
             <!--
@@ -37,7 +41,7 @@ brand_name = config.settings['server']['name'] + ' ' + config.settings['server']
               <a class="nav-link" href="/movies">Movies</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/tv">TV Series</a>
+              <a class="nav-link" href="/tv">Shows</a>
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">Genres</a>

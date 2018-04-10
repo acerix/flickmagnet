@@ -136,9 +136,17 @@ if table_count is 0:
   print('Initializing database...')
 
   # download media-torrent-db schema
+  # @todo include in package instead of downloading directly
   import urllib.request
+  print('Downloading schema...')
   with urllib.request.urlopen('https://raw.githubusercontent.com/acerix/media-torrent-db/master/schema.sql') as f:
     schema_sql = f.read().decode('utf-8')
 
   # add to the database
+  print('Importing schema...')
   db.executescript(schema_sql)
+
+  # @todo importing data should be an option when first opening the web interface
+  print('Importing public domain videos...')
+  os.system('python3 import.py https://raw.githubusercontent.com/acerix/public-domain-media-db/master/movies.csv')
+  os.system('python3 import.py https://raw.githubusercontent.com/acerix/public-domain-media-db/master/shows.csv')

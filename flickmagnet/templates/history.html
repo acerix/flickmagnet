@@ -3,17 +3,19 @@
 <div class="container mt-3">
   <h1>History</h1>
 
+  <p>${len(results)} items found.</p>
+
 % for r in results:
 
-  <div class="media">
-    <div class="media-left media-middle">
-    <a href="/entity?entity_type=${r['type']}&amp;entity_id=${r['id']}">
+  <div class="card">
+    <div class="card-left card-middle">
+    <a href="/title?title_type=${r['type']}&amp;title_id=${r['id']}">
       <img src="/t/${r['id']}.jpg" alt="" style="width:217px;">
     </a>
     </div>
-    <div class="media-body">
+    <div class="card-body">
 
-<h4 class="media-heading">
+<h4 class="card-header">
 ${r['name'] | h}
 % if r['release_year']:
    (${r['release_year']})
@@ -30,14 +32,14 @@ ${r['name'] | h}
   </a>
 
 % if 'movie'==r['type'] or 'episode'==r['type']:
-  <a class="btn btn-success" href="/play?entity_type=${r['type']}&amp;entity_id=${r['id']}" target="_blank">
+  <a class="btn btn-success" href="/play?title_type=${r['type']}&amp;title_id=${r['id']}" target="_blank">
     Play
     <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
   </a>
 % endif
 
 % if 'series'==r['type']:
-  <a class="btn btn-success" href="/series_xspf?entity_id=${r['id']}" target="_blank">
+  <a class="btn btn-success" href="/series_xspf?title_id=${r['id']}" target="_blank">
     Open as Playlist
     <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
   </a>

@@ -38,14 +38,14 @@ from version import __version__
 settings['server']['version'] = __version__
 
 
-# where downloads are stored
-settings['server']['download_dir'] = cache_dir
-
 # where pid file is stored
 settings['server']['runtime_dir'] = runtime_dir
 
 # where htdocs are stored
 settings['server']['htdocs_dir'] = os.path.join(package_dir, 'htdocs')
+
+# where downloads are stored
+settings['server']['download_dir'] = os.path.join(settings['server']['htdocs_dir'], 'torrents')
 
 
 # get a host name if not defined

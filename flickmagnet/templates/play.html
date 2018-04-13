@@ -3,8 +3,8 @@
 <div class="container mt-3">
 
   <div class="embed-responsive embed-responsive-16by9">
-    <video controls preload="auto" autoplay poster="http://imgdb.pow7.com/title/tt${ format(movie_id, '07') }/poster.jpeg">
-      <source src="${video_url}" type="video/mp4">
+    <video controls preload="auto" autoplay poster="//imgdb.pow7.com/title/tt${ format(title_id, '07') }/poster.jpeg">
+      <source src="${ '/torrents/' + release_videos[0]['hash'] + '/' + release_videos[0]['filename'] }" type="video/mp4">
     </video>
   </div>
 
@@ -13,8 +13,7 @@
   <div class="card">
     <div class="card-body">
       <div class="btn-group" role="group" aria-label="...">
-        <a class="btn btn-default" href="/stream?id=${movie_id}">Download Video</a>
-        <a class="btn btn-default" href="/xspf?id=${movie_id}">Open in Video Player</a>
+        <a class="btn btn-default" href="/xspf?title_id=${title_id}">Open in Video Player</a>
       </div>
     </div>
   </div>

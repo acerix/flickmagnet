@@ -1,7 +1,10 @@
 import os, os.path
 import random
 import string
+import re
 import time
+import subprocess
+from urllib.parse import quote
 from datetime import date
 
 import cherrypy
@@ -16,9 +19,17 @@ from mako.lookup import TemplateLookup
 templates_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates')
 lookup = TemplateLookup(directories=[templates_dir])
 
+default_torrent_trackers = [
+  'udp://tracker.leechers-paradise.org:6969',
+  'udp://zer0day.ch:1337',
+  'udp://open.demonii.com:1337',
+  'udp://tracker.coppersurfer.tk:6969',
+  'udp://exodus.desync.com:6969',
+  'http://pow7.com/announce',
+  'http://denis.stalker.h3q.com:6969/announce'
+]
 
 class RootController:
-
 
   # welcome
 
@@ -179,75 +190,207 @@ WHERE
   # video player
 
   @cherrypy.expose
-  def play(self, title_id):
+  def play(self, title_id, season_id=None, episode_id=None):
 
     page_template = lookup.get_template("play.html")
 
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
-  id
+  movie_release.id
 FROM
+  movie_release
+JOIN
   movie
+    ON
+      movie.id = movie_release.movie_id
 WHERE
-  id = ?
+  movie.id = ?
 """, [
   title_id
 ])
-    movie = dbc.fetchone()
+    release = dbc.fetchone()
 
-    if movie:
+    if release:
+      dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  movie_release_video.id,
+  torrent.hash,
+  movie_release_video.filename
+FROM
+  movie_release_video
+JOIN
+  torrent
+    ON
+      torrent.id = movie_release_video.torrent_id
+WHERE
+  movie_release_video.movie_release_id = ?
+ORDER BY
+  movie_release_video.id
+""", [
+  release['id']
+])
+      release_videos = dbc.fetchall()
 
       return page_template.render(
         title = 'Watch Video',
-        movie_id = movie['id'],
-        title_id = title_id,
-        video_url = 'https://www.quirksmode.org/html5/videos/big_buck_bunny.mp4'
+        title_id = int(title_id),
+        release_videos = release_videos
       )
 
-
     return 'no magnets found'
+
+
+  # generate an xspf playlist for the torrent video
+
+  @cherrypy.expose
+  def xspf(self, title_id):
+
+    title_id = int(title_id)
+
+    dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  *
+FROM
+  movie_release_video
+JOIN
+  torrent
+    ON
+      movie
+WHERE
+  id = ?
+""", [
+  release_id
+])
+
+    torrent = dbc.fetchone()
+
+    page_template = lookup.get_template("torrent.xspf")
+
+    location = 'http://%s:%d/stream?release_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], release_id)
+
+    cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
+    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flick.xspf"'
+
+    return str.encode(page_template.render(location=location))
+
+
+
+  # generate an xspf playlist every season/episode in a series
+
+  @cherrypy.expose
+  def series_xspf(self, entity_id):
+
+    series_id = int(entity_id)
+
+    dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  *
+FROM
+  series
+WHERE
+  id = ?
+""", [
+  series_id
+])
+
+    series = dbc.fetchone()
+
+    page_template = lookup.get_template("series.xspf")
+
+    dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  'Season ' || substr('0'||season.number, -2, 2) season_name,
+  'Episode ' || substr('0'||episode.number, -2, 2) name,
+  torrent.id release_id,
+  episode.seconds_long
+FROM
+  torrent
+JOIN
+  episode
+    ON
+      :type_id_episode = torrent.entity_type_id
+    AND
+      episode.id = torrent.entity_id
+JOIN
+  season
+    ON
+      season.id = episode.season_id
+WHERE
+  season.series_id = :series_id
+GROUP BY
+  episode.id
+ORDER BY
+  season.number,
+  episode.number
+""", {
+  'series_id': series_id,
+  'type_id_episode': cherrypy.thread_data.settings['cached_tables']['entity_type']['episode']
+})
+
+    episodes = []
+
+    for r in dbc.fetchall():
+      episodes.append({
+        'season_name': r['season_name'],
+        'name': r['name'],
+        'location': 'http://%s:%d/stream?release_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], r['release_id']),
+        'duration': 0 if r['seconds_long'] is None else r['seconds_long'] * 1000
+      })
+
+    if len(episodes) == 0:
+      return 'no episodes found yet'
+
+    #cherrypy.response.headers['Content-Type'] = 'text/plain'
+    cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
+    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="series.xspf"'
+
+    return str.encode(page_template.render(
+      series_name = series['name'],
+      episodes = episodes
+    ))
+
 
 
   # stream a video
 
   @cherrypy.expose
-  def stream(self, magnet_file_id):
+  def stream(self, release_id):
 
-    magnet_file_id = int(magnet_file_id)
+    release_id = int(release_id)
 
 
 
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
-  magnet_file.*,
+  torrent.*,
   magnet.btih,
   4 torrent_status
 FROM
-  magnet_file
+  torrent
 JOIN
   magnet
     ON
-      magnet.id = magnet_file.magnet_id
+      magnet.id = torrent.magnet_id
 WHERE
-  magnet_file.id = ?
+  torrent.id = ?
 """, [
-  magnet_file_id
+  release_id
 ])
 
-    magnet_file = dbc.fetchone()
+    torrent = dbc.fetchone()
 
-    if magnet_file:
+    if torrent:
 
       # set torrent to start streaming
       dbc = cherrypy.thread_data.db.execute("""
 UPDATE
-  magnet_file
+  torrent
 SET
   status_id = %d
 WHERE
   id = %d
 """ % (
-  magnet_file['id']
+  torrent['id']
 ))
       cherrypy.thread_data.db.commit()
 
@@ -285,6 +428,44 @@ def start(settings, db_connect):
   })
 
   ht_dir = settings['htdocs_dir']
+
+  # 404 handler
+  def error_page_404(status, message, traceback, version):
+
+    # if the request is for a file in a torrent, try mounting the torrent
+    m = re.search(r'/torrents/([0-9a-f]{40})(/.*)', cherrypy.request.path_info)
+    if m is not None:
+      info_hash = m.group(1)
+      video_filename = m.group(2)
+      mount_dir = os.path.join(settings['download_dir'], info_hash)
+
+      # create directory to mount
+      if not os.path.isdir(mount_dir):
+        os.mkdir(mount_dir)
+
+      torrent_params = ''
+
+      for tracker in default_torrent_trackers:
+        torrent_params = torrent_params + '&tr=' + quote(tracker)
+
+      # mount torrent with btfs
+      subprocess.Popen([
+        'btfs',
+        'magnet:?xt=urn:btih:' + info_hash + torrent_params,
+        mount_dir
+      ])
+
+      # wait for files to appear
+      while len([name for name in os.listdir(mount_dir) if os.path.isfile(name)]) == 0:
+        print('Waiting for metadata...')
+        time.sleep(5)
+
+      # reload to the file which now exists if it's in the torrent
+      return cherrypy.HTTPRedirect(cherrypy.request.path_info, 307)
+
+
+  # set 404 handler
+  cherrypy.config.update({'error_page.404': error_page_404})
 
 
   def connect(thread_index):

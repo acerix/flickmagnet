@@ -9,16 +9,17 @@
 % for r in episodes:
   <div class="card">
     <div class="card-header">
-      <a href="/title?title_id=${r['id']}">
-      ${r['title'] | h}
+      <a href="/title?title_id=${r['series_id']}">
+      ${r['series_title'] | h}
       </a>
     </div>
     <div class="card-body">
       <div class="row">
         <div class="col-lg-10 col-sm-8 col-6">
+          <h2>${r['title'] | h}</h2>
           <p>${r['synopsis'] | h}</p>
           <div class="btn-group" role="group">
-            <a class="btn btn-primary" href="/play?title_id=${r['id']}&amp;episode_id=${r['id']}" target="_blank">
+            <a class="btn btn-primary" href="/play?title_id=${r['series_id']}&amp;season=${r['season_number']}&amp;episode=${r['number']}" target="_blank">
               Play
               <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
             </a>

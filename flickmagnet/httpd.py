@@ -144,7 +144,7 @@ LIMIT
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
   series_season_episode.*,
-  series_season_episode.number season_number,
+  series_season.number season_number,
   series.title series_title,
   series.id series_id
 FROM
@@ -207,10 +207,11 @@ WHERE
   # video player
 
   @cherrypy.expose
-  def play(self, title_id, season_id=None, episode_id=None):
+  def play(self, title_id, season=None, episode=None):
 
     page_template = lookup.get_template("play.html")
 
+    # find movie
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
   movie_release.id
@@ -254,7 +255,63 @@ ORDER BY
         release_videos = release_videos
       )
 
-    return 'no magnets found'
+
+    # find series
+    dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  *
+FROM
+  series
+WHERE
+  id = ?
+""", [
+  title_id
+])
+    series = dbc.fetchone()
+
+    if series:
+      # @todo should not get all releases, only 1 per episode based on preferred video quality
+      dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  series_season_episode_release_video.id,
+  torrent.hash,
+  series_season_episode_release_video.filename
+FROM
+  series_season_episode_release_video
+JOIN
+  series_season_episode_release
+    ON
+      series_season_episode_release.id = series_season_episode_release_video.episode_release_id
+JOIN
+  series_season_episode
+    ON
+      series_season_episode.id = series_season_episode_release.episode_id
+JOIN
+  series_season
+    ON
+      series_season.id = series_season_episode.series_season_id
+JOIN
+  torrent
+    ON
+      torrent.id = series_season_episode_release_video.torrent_id
+WHERE
+  series_season.series_id = ?
+ORDER BY
+  series_season.number,
+  series_season_episode.number,
+  series_season_episode_release_video.id
+""", [
+  series['id']
+])
+      release_videos = dbc.fetchall()
+
+      return page_template.render(
+        title = 'Watch Video',
+        title_id = int(title_id),
+        release_videos = release_videos
+      )
+
+    return 'Title not found'
 
 
   # generate an xspf playlist for the torrent video
@@ -262,33 +319,112 @@ ORDER BY
   @cherrypy.expose
   def xspf(self, title_id):
 
-    title_id = int(title_id)
+    # @todo deduplicate lookups in play()
 
+    # find movie
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
-  *
+  movie_release.id
+FROM
+  movie_release
+JOIN
+  movie
+    ON
+      movie.id = movie_release.movie_id
+WHERE
+  movie.id = ?
+""", [
+  title_id
+])
+    release = dbc.fetchone()
+
+    release_videos = []
+
+    if release:
+      dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  movie_release_video.id,
+  torrent.hash,
+  movie_release_video.filename
 FROM
   movie_release_video
 JOIN
   torrent
     ON
-      movie
+      torrent.id = movie_release_video.torrent_id
+WHERE
+  movie_release_video.movie_release_id = ?
+ORDER BY
+  movie_release_video.id
+""", [
+  release['id']
+])
+      release_videos = dbc.fetchall()
+
+    else:
+
+      # find series
+      dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  *
+FROM
+  series
 WHERE
   id = ?
 """, [
-  release_id
+  title_id
 ])
+      series = dbc.fetchone()
 
-    torrent = dbc.fetchone()
+      if series:
+        # @todo should not get all releases, only 1 per episode based on preferred video quality
+        dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  series_season_episode_release_video.id,
+  torrent.hash,
+  series_season_episode_release_video.filename
+FROM
+  series_season_episode_release_video
+JOIN
+  series_season_episode_release
+    ON
+      series_season_episode_release.id = series_season_episode_release_video.episode_release_id
+JOIN
+  series_season_episode
+    ON
+      series_season_episode.id = series_season_episode_release.episode_id
+JOIN
+  series_season
+    ON
+      series_season.id = series_season_episode.series_season_id
+JOIN
+  torrent
+    ON
+      torrent.id = series_season_episode_release_video.torrent_id
+WHERE
+  series_season.series_id = ?
+ORDER BY
+  series_season.number,
+  series_season_episode.number,
+  series_season_episode_release_video.id
+""", [
+  series['id']
+])
+        release_videos = dbc.fetchall()
 
-    page_template = lookup.get_template("torrent.xspf")
+    page_template = lookup.get_template('videos.xspf')
 
-    location = 'http://%s:%d/stream?release_id=%d' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port'], release_id)
+    xspf_data = str.encode(page_template.render(
+      title = 'Flick Magnet',
+      url_base = ('http://%s:%d/' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port']) ),
+      videos = release_videos
+    ))
 
     cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
-    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flick.xspf"'
+    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flickmagnet.xspf"'
 
-    return str.encode(page_template.render(location=location))
+    return xspf_data
+
 
 
 

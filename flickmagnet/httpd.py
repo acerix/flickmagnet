@@ -19,6 +19,7 @@ from mako.lookup import TemplateLookup
 templates_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates')
 lookup = TemplateLookup(directories=[templates_dir])
 
+# public trakers to add to magnet links so they start faster
 default_torrent_trackers = [
   'udp://tracker.leechers-paradise.org:6969',
   'udp://zer0day.ch:1337',
@@ -455,10 +456,10 @@ def start(settings, db_connect):
         mount_dir
       ])
 
-      # wait for files to appear
-      while len([name for name in os.listdir(mount_dir) if os.path.isfile(name)]) == 0:
-        print('Waiting for metadata...')
-        time.sleep(5)
+      # wait for files to appear (metadata downloaded)
+      while len( os.listdir(mount_dir) ) == 0:
+        # print('Waiting for metadata...')
+        time.sleep(1)
 
       # reload to the file which now exists if it's in the torrent
       return cherrypy.HTTPRedirect(cherrypy.request.path_info, 307)

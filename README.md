@@ -2,6 +2,10 @@
 
 Open source NetFlix clone.
 
+## Screenshot
+
+![Flick Magnet 0.0.7 screenshot on desktop]https://acerix.github.io/flickmagnet/flickmagnet-0.0.7.png
+
 ## Install Daemon
 
 ```

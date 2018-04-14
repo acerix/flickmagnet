@@ -32,7 +32,7 @@ def main():
   print()
   access_url = 'http://' + config.settings['server']['http_host']
   if config.settings['server']['http_port'] != 80:
-      access_url += ':' + str(config.settings['server']['http_port'])
+    access_url += ':' + str(config.settings['server']['http_port'])
   access_url += '/'
   print('Listening on', access_url)
   print()

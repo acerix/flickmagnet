@@ -13,7 +13,6 @@ from cherrypy.lib.static import serve_file
 # hide debug messages
 cherrypy.log.screen = None
 
-
 from mako.template import Template
 from mako.lookup import TemplateLookup
 templates_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates')
@@ -47,12 +46,29 @@ class RootController:
 
     if q is not None and len(q):
       dbc = cherrypy.thread_data.db.execute("""
+
 SELECT
-  *
+  'movie' type,
+  id,
+  title,
+  synopsis
 FROM
   movie
 WHERE
   title LIKE :query
+
+UNION
+
+SELECT
+  'series' type,
+  id,
+  title,
+  synopsis
+FROM
+  series
+WHERE
+  title LIKE :query
+
 """, {
   'query': '%' + q + '%'
 })

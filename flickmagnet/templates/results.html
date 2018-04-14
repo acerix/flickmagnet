@@ -12,7 +12,7 @@
     <div class="card-header">
       <a href="/title?title_id=${r['id']}">
       ${r['title'] | h}
-      % if r['theater_release_year']:
+      % if 'theater_release_year' in r and r['theater_release_year']:
          (${r['theater_release_year']})
       % endif
       </a>
@@ -20,20 +20,20 @@
     <div class="card-body">
       <div class="row">
         <div class="col-lg-10 col-sm-8 col-6">
-          <p>${r['synopsis'] | h}</p>
-          <div class="btn-group-vertical" role="group" aria-label="...">
+          % if len(r['synopsis']):
+              <p>${r['synopsis'] | h}</p>
+          % endif
+          <div class="btn-group" role="group" aria-label="...">
+
+            <a class="btn btn-success" href="/play?title_id=${r['id']}" target="_blank">
+              Play
+              <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
+            </a>
 
             <a class="btn btn-default" href="http://www.imdb.com/title/tt${'{0:07d}'.format(r['id'])}/" target="_blank">
               IMDB
               <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
             </a>
-
-          % if 1:
-            <a class="btn btn-success" href="/play?title_id=${r['id']}" target="_blank">
-              Play
-              <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
-            </a>
-          % endif
 
           </div>
 

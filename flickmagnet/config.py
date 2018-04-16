@@ -154,5 +154,7 @@ if table_count is 0:
 
   # @todo importing data should be an option when first opening the web interface
   print('Importing public domain videos...')
-  os.system('python3 import.py https://raw.githubusercontent.com/acerix/public-domain-media-db/master/movies.csv')
-  os.system('python3 import.py https://raw.githubusercontent.com/acerix/public-domain-media-db/master/shows.csv')
+  flickmagnet_script_dir = os.path.dirname(os.path.abspath(__file__))
+  import_script_path = '/usr/bin/python3 ' + flickmagnet_script_dir + '/import.py'
+  os.system(import_script_path + ' https://raw.githubusercontent.com/acerix/public-domain-media-db/master/movies.csv')
+  os.system(import_script_path + ' https://raw.githubusercontent.com/acerix/public-domain-media-db/master/shows.csv')

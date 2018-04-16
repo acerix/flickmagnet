@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-/usr/bin/python3 /usr/lib/python3.5/site-packages/flickmagnet/flickmagnet.py
+/usr/bin/python3 "`python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"`"/flickmagnet/flickmagnet.py

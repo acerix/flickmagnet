@@ -1,5 +1,5 @@
 #EXTM3U
 % for video in videos:
-#EXTINF:${ video['seconds_long'] }, ${ video['title'] }
+#EXTINF:${ video['seconds_long'] }, ${ video['title'] if 'title' in video else title }
 ${ url_base + 'torrents/' + video['hash'] + '/' + video['filename'] }
 % endfor

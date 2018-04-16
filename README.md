@@ -17,7 +17,7 @@ python3 setup.py install --optimize=1
 Install examples/flickmagnet.service in systemd and start/enable the service, or run the installed flickmagnet.py with python3:
 
 ```
-/usr/bin/python3 /usr/lib/python3.5/site-packages/flickmagnet/flickmagnet.py
+./flickmagnet.sh
 ```
 
 ## Open in Browser

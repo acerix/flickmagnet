@@ -627,7 +627,7 @@ ORDER BY
   movie_release_video.id
 """, {
   'release_id': release['id'],
-  'seconds_long': minutes_long * 60
+  'seconds_long': release['minutes_long'] * 60
 })
       release_videos = dbc.fetchall()
       title = release['movie_title']

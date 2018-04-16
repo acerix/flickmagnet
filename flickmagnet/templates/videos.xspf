@@ -5,7 +5,7 @@
     <trackList>
 % for video in videos:
     <track>
-      <title>${ video['title'] }</title>
+      <title>${ video['title'] if 'title' in video else title }</title>
       <location>${ url_base + 'torrents/' + video['hash'] + '/' + urllib.parse.quote(video['filename']) }</location>
     </track>
 % endfor

@@ -1,6 +1,10 @@
 
 =  Building Flick Magnet for Windows =
 
+Port btfs to Windows and install it
+
+  https://github.com/johang/btfs
+
 Install Python 3
 
     https://www.python.org/downloads/windows/

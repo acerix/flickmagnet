@@ -968,7 +968,7 @@ def start(settings, db_connect):
       },
       '/torrents': {
         'tools.staticdir.on': True,
-        'tools.staticdir.dir': os.path.join(ht_dir, 'torrents'),
+        'tools.staticdir.dir': settings['download_dir'],
         'tools.staticdir.content_types' : {
           'vob': 'video/mp4'
         }

@@ -45,7 +45,13 @@ settings['server']['runtime_dir'] = runtime_dir
 settings['server']['htdocs_dir'] = os.path.join(package_dir, 'htdocs')
 
 # where downloads are stored
-settings['server']['download_dir'] = os.path.join(settings['server']['htdocs_dir'], 'torrents')
+# settings['server']['download_dir'] = os.path.join(settings['server']['htdocs_dir'], 'torrents')
+settings['server']['download_dir'] = os.path.join(cache_dir, 'torrents')
+
+# create download dir if none
+if not os.path.isdir(settings['server']['download_dir']):
+  os.mkdir(settings['server']['download_dir'])
+
 
 
 # get a host name if not defined

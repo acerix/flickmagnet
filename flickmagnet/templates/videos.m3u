@@ -1,0 +1,5 @@
+#EXTM3U
+% for video in videos:
+#EXTINF:${ video['seconds_long'] }, ${ video['title'] }
+${ url_base + 'torrents/' + video['hash'] + '/' + video['filename'] }
+% endfor

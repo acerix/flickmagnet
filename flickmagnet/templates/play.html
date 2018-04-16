@@ -13,7 +13,8 @@
   <div class="card">
     <div class="card-body">
       <div class="btn-group" role="group" aria-label="...">
-        <a class="btn btn-default" href="/xspf?title_id=${title_id}">Open in Video Player</a>
+        <a class="btn btn-default" href="/xspf?title_id=${title_id}${ '&season=' + season if season else '' }${ '&episode=' + episode if episode else '' }">XSPF Playlist</a>
+        <a class="btn btn-default" href="/m3u?title_id=${title_id}${ '&season=' + season if season else '' }${ '&episode=' + episode if episode else '' }">M3U Playlist</a>
       </div>
     </div>
   </div>

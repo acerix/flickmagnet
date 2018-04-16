@@ -2,21 +2,17 @@
 
 <div class="container mt-3">
 
-  <div class="panel panel-default">
-    <div class="panel-heading">${title}</div>
-    <div class="panel-body">
-    <div class="btn-group" role="group" aria-label="...">
-      <a class="btn btn-default" href="/stream">Download Video</a>
-      <a class="btn btn-default" href="/xspf">Open in Video Player</a>
+  <div class="card">
+    <div class="card-header">
+      ${title}
     </div>
-
+    <div class="card-body">
+      <div class="btn-group" role="group" aria-label="...">
+        <a class="btn btn-primary" href="/play?title_id=${title_id}">Watch</a>
+        <a class="btn btn-default" href="/xspf?title_id=${title_id}">XSPF Playlist</a>
+        <a class="btn btn-default" href="/m3u?title_id=${title_id}">M3U Playlist</a>
+      </div>
     </div>
-  </div>
-
-  <div class="embed-responsive embed-responsive-16by9">
-    <video controls preload="auto" autoplay poster="http://imgdb.pow7.com/title/tt${ format(int(title_id), '07') }/poster.jpeg">
-      <source src="/stream" type="video/mp4">
-    </video>
   </div>
 
 </div>

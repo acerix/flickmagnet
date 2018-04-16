@@ -178,43 +178,13 @@ LIMIT
 
     page_template = lookup.get_template("title.html")
 
-    dbc = cherrypy.thread_data.db.execute("""
-SELECT
-  id,
-  title
-FROM
-  movie
-WHERE
-  id = ?
-""", [
-  title_id
-])
-    movie = dbc.fetchone()
-
-    if movie:
-
-      return page_template.render(
-        title_id = title_id,
-        title = movie['title'],
-      )
-
-    return 'title not found'
-
-
-
-
-
-  # video player
-
-  @cherrypy.expose
-  def play(self, title_id, season=None, episode=None):
-
     page_template = lookup.get_template("play.html")
 
     # find movie
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
-  movie_release.id
+  movie_release.id,
+  movie.title movie_title
 FROM
   movie_release
 JOIN
@@ -250,7 +220,7 @@ ORDER BY
       release_videos = dbc.fetchall()
 
       return page_template.render(
-        title = 'Watch Video',
+        title = release['movie_title'],
         title_id = int(title_id),
         release_videos = release_videos
       )
@@ -271,6 +241,14 @@ WHERE
 
     if series:
       # @todo should not get all releases, only 1 per episode based on preferred video quality
+
+      where_sql = """
+  series_season.series_id = :series_id
+"""
+      query_params = {
+        'series_id': series['id']
+      }
+
       dbc = cherrypy.thread_data.db.execute("""
 SELECT
   series_season_episode_release_video.id,
@@ -295,19 +273,158 @@ JOIN
     ON
       torrent.id = series_season_episode_release_video.torrent_id
 WHERE
-  series_season.series_id = ?
+  """ + where_sql + """
 ORDER BY
   series_season.number,
   series_season_episode.number,
   series_season_episode_release_video.id
+""", query_params)
+      release_videos = dbc.fetchall()
+
+      return page_template.render(
+        title = series['title'],
+        title_id = int(title_id),
+        release_videos = release_videos
+      )
+
+    return 'Title not found'
+
+
+  # video player
+
+  @cherrypy.expose
+  def play(self, title_id, season=None, episode=None):
+
+    page_template = lookup.get_template("play.html")
+
+    # find movie
+    dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  movie_release.id,
+  movie.title movie_title
+FROM
+  movie_release
+JOIN
+  movie
+    ON
+      movie.id = movie_release.movie_id
+WHERE
+  movie.id = ?
 """, [
-  series['id']
+  title_id
+])
+    release = dbc.fetchone()
+
+    if release:
+      dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  movie_release_video.id,
+  torrent.hash,
+  movie_release_video.filename
+FROM
+  movie_release_video
+JOIN
+  torrent
+    ON
+      torrent.id = movie_release_video.torrent_id
+WHERE
+  movie_release_video.movie_release_id = ?
+ORDER BY
+  movie_release_video.id
+""", [
+  release['id']
 ])
       release_videos = dbc.fetchall()
 
       return page_template.render(
-        title = 'Watch Video',
+        title = release['movie_title'],
         title_id = int(title_id),
+        release_videos = release_videos
+      )
+
+
+    # find series
+    dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  *
+FROM
+  series
+WHERE
+  id = ?
+""", [
+  title_id
+])
+    series = dbc.fetchone()
+
+    if series:
+      # @todo should not get all releases, only 1 per episode based on preferred video quality
+
+      where_sql = """
+  series_season.series_id = :series_id
+"""
+      query_params = {
+        'series_id': series['id']
+      }
+
+      if season is not None:
+        where_sql += """
+AND
+  series_season.number = :season
+"""
+        query_params['season'] = season
+
+      if episode is not None:
+        where_sql += """
+AND
+  series_season_episode.number = :episode
+"""
+        query_params['episode'] = episode
+
+      dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  series_season_episode_release_video.id,
+  torrent.hash,
+  series_season_episode_release_video.filename,
+  'nigz' title
+FROM
+  series_season_episode_release_video
+JOIN
+  series_season_episode_release
+    ON
+      series_season_episode_release.id = series_season_episode_release_video.episode_release_id
+JOIN
+  series_season_episode
+    ON
+      series_season_episode.id = series_season_episode_release.episode_id
+JOIN
+  series_season
+    ON
+      series_season.id = series_season_episode.series_season_id
+JOIN
+  torrent
+    ON
+      torrent.id = series_season_episode_release_video.torrent_id
+WHERE
+  """ + where_sql + """
+ORDER BY
+  series_season.number,
+  series_season_episode.number,
+  series_season_episode_release_video.id
+""", query_params)
+      release_videos = dbc.fetchall()
+
+      title = series['title']
+      if season is not None:
+        title += ': Season ' + season.rjust(2, '0')
+
+      if episode is not None:
+        title += ', Episode ' + episode.rjust(2, '0')
+
+      return page_template.render(
+        title = series['title'],
+        title_id = int(title_id),
+        season = season,
+        episode = episode,
         release_videos = release_videos
       )
 
@@ -317,14 +434,15 @@ ORDER BY
   # generate an xspf playlist for the torrent video
 
   @cherrypy.expose
-  def xspf(self, title_id):
+  def xspf(self, title_id, season=None, episode=None):
 
     # @todo deduplicate lookups in play()
 
     # find movie
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
-  movie_release.id
+  movie_release.id,
+  movie.title movie_title
 FROM
   movie_release
 JOIN
@@ -360,6 +478,7 @@ ORDER BY
   release['id']
 ])
       release_videos = dbc.fetchall()
+      title = release['movie_title']
 
     else:
 
@@ -378,11 +497,39 @@ WHERE
 
       if series:
         # @todo should not get all releases, only 1 per episode based on preferred video quality
+
+        where_sql = """
+  series_season.series_id = :series_id
+"""
+        query_params = {
+          'series_id': series['id']
+        }
+
+        if season is not None:
+          where_sql += """
+AND
+  series_season.number = :season
+"""
+          query_params['season'] = season
+
+        if episode is not None:
+          where_sql += """
+AND
+  series_season_episode.number = :episode
+"""
+          query_params['episode'] = episode
+
         dbc = cherrypy.thread_data.db.execute("""
 SELECT
   series_season_episode_release_video.id,
   torrent.hash,
-  series_season_episode_release_video.filename
+  series_season_episode_release_video.filename,
+  printf(
+    '%s: Season %.2d Episode %.2d',
+    series.title,
+    series_season.number,
+    series_season_episode.number
+  ) title
 FROM
   series_season_episode_release_video
 JOIN
@@ -398,24 +545,33 @@ JOIN
     ON
       series_season.id = series_season_episode.series_season_id
 JOIN
+  series
+    ON
+      series.id = series_season.series_id
+JOIN
   torrent
     ON
       torrent.id = series_season_episode_release_video.torrent_id
 WHERE
-  series_season.series_id = ?
+  """ + where_sql + """
 ORDER BY
   series_season.number,
   series_season_episode.number,
   series_season_episode_release_video.id
-""", [
-  series['id']
-])
-        release_videos = dbc.fetchall()
+""", query_params)
+      release_videos = dbc.fetchall()
+
+      title = series['title']
+      if season is not None:
+        title += ': Season ' + season.rjust(2, '0')
+
+      if episode is not None:
+        title += ' Episode ' + episode.rjust(2, '0')
 
     page_template = lookup.get_template('videos.xspf')
 
     xspf_data = str.encode(page_template.render(
-      title = 'Flick Magnet',
+      title = title,
       url_base = ('http://%s:%d/' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port']) ),
       videos = release_videos
     ))
@@ -424,6 +580,159 @@ ORDER BY
     cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flickmagnet.xspf"'
 
     return xspf_data
+
+  @cherrypy.expose
+  def m3u(self, title_id, season=None, episode=None):
+
+    # @todo deduplicate lookups in play()
+    # @todo deduplicate playlist generators
+
+    # find movie
+    dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  movie_release.id,
+  movie.title movie_title,
+  movie.minutes_long
+FROM
+  movie_release
+JOIN
+  movie
+    ON
+      movie.id = movie_release.movie_id
+WHERE
+  movie.id = ?
+""", [
+  title_id
+])
+    release = dbc.fetchone()
+
+    release_videos = []
+
+    if release:
+      dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  movie_release_video.id,
+  torrent.hash,
+  movie_release_video.filename,
+  :seconds_long seconds_long
+FROM
+  movie_release_video
+JOIN
+  torrent
+    ON
+      torrent.id = movie_release_video.torrent_id
+WHERE
+  movie_release_video.movie_release_id = :release_id
+ORDER BY
+  movie_release_video.id
+""", {
+  'release_id': release['id'],
+  'seconds_long': minutes_long * 60
+})
+      release_videos = dbc.fetchall()
+      title = release['movie_title']
+
+    else:
+
+      # find series
+      dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  *
+FROM
+  series
+WHERE
+  id = ?
+""", [
+  title_id
+])
+      series = dbc.fetchone()
+
+      if series:
+        # @todo should not get all releases, only 1 per episode based on preferred video quality
+
+        where_sql = """
+  series_season.series_id = :series_id
+"""
+        query_params = {
+          'series_id': series['id']
+        }
+
+        if season is not None:
+          where_sql += """
+AND
+  series_season.number = :season
+"""
+          query_params['season'] = season
+
+        if episode is not None:
+          where_sql += """
+AND
+  series_season_episode.number = :episode
+"""
+          query_params['episode'] = episode
+
+        dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  series_season_episode_release_video.id,
+  torrent.hash,
+  series_season_episode_release_video.filename,
+  printf(
+    '%s: Season %.2d Episode %.2d',
+    series.title,
+    series_season.number,
+    series_season_episode.number
+  ) title,
+  (series_season_episode.minutes_long * 60) seconds_long
+FROM
+  series_season_episode_release_video
+JOIN
+  series_season_episode_release
+    ON
+      series_season_episode_release.id = series_season_episode_release_video.episode_release_id
+JOIN
+  series_season_episode
+    ON
+      series_season_episode.id = series_season_episode_release.episode_id
+JOIN
+  series_season
+    ON
+      series_season.id = series_season_episode.series_season_id
+JOIN
+  series
+    ON
+      series.id = series_season.series_id
+JOIN
+  torrent
+    ON
+      torrent.id = series_season_episode_release_video.torrent_id
+WHERE
+  """ + where_sql + """
+ORDER BY
+  series_season.number,
+  series_season_episode.number,
+  series_season_episode_release_video.id
+""", query_params)
+      release_videos = dbc.fetchall()
+
+      title = series['title']
+      if season is not None:
+        title += ': Season ' + season.rjust(2, '0')
+
+      if episode is not None:
+        title += ' Episode ' + episode.rjust(2, '0')
+
+    page_template = lookup.get_template('videos.m3u')
+
+    video_data = str.encode(page_template.render(
+      title = title,
+      url_base = ('http://%s:%d/' % (cherrypy.thread_data.settings['http_host'], cherrypy.thread_data.settings['http_port']) ),
+      videos = release_videos
+    ))
+
+    cherrypy.response.headers['Content-Type'] = 'audio/x-mpequrl'
+    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flickmagnet.m3u"'
+
+    return video_data
 
 
 
@@ -510,8 +819,6 @@ ORDER BY
   def stream(self, release_id):
 
     release_id = int(release_id)
-
-
 
     dbc = cherrypy.thread_data.db.execute("""
 SELECT
@@ -608,13 +915,17 @@ def start(settings, db_connect):
         mount_dir
       ])
 
-      # wait for files to appear (metadata downloaded)
+      # wait for files to appear (ie. metadata downloaded)
       while len( os.listdir(mount_dir) ) == 0:
         # print('Waiting for metadata...')
         time.sleep(1)
 
       # reload to the file which now exists if it's in the torrent
-      return cherrypy.HTTPRedirect(cherrypy.request.path_info, 307)
+      #cherrypy.HTTPRedirect(cherrypy.request.path_info)
+      cherrypy.response.status = 302
+      cherrypy.response.headers['Location'] = cherrypy.request.path_info
+      cherrypy.response.body = None
+
 
 
   # set 404 handler
@@ -654,6 +965,13 @@ def start(settings, db_connect):
       '/static': {
         'tools.staticdir.on': True,
         'tools.staticdir.dir': os.path.join(ht_dir, 'static')
+      },
+      '/torrents': {
+        'tools.staticdir.on': True,
+        'tools.staticdir.dir': os.path.join(ht_dir, 'torrents'),
+        'tools.staticdir.content_types' : {
+          'vob': 'video/mp4'
+        }
       }
     }
   )

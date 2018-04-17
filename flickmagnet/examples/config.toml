@@ -15,8 +15,5 @@ http_addr = "0.0.0.0"
 # Hostname that HTTP clients can connect to, defaults to local network IP
 # http_host = "flickmag.net"
 
-# Port to listen for bittorrent, defaults to a random port
-# torrent_port = 6881
-
 # Videos are deleted if they are not watched for this many days
 # video_cache_days = 7

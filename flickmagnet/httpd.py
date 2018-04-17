@@ -857,6 +857,15 @@ WHERE
 
 
 
+  # import video list
+
+  @cherrypy.expose
+  def title_import(self):
+    page_template = lookup.get_template("title_import.html")
+    return page_template.render()
+
+
+
   # recently watched videos
 
   @cherrypy.expose

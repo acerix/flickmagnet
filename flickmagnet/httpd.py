@@ -901,9 +901,6 @@ def start(settings, db_connect):
   # 404 handler
   def error_page_404(status, message, traceback, version):
 
-    # set 404 handler
-    cherrypy.config.update({'error_page.404': error_page_404})
-
     # if the request is for a file in a torrent, try mounting the torrent
     m = re.search(r'/torrents/([0-9a-f]{40})(/.*)', cherrypy.request.path_info)
     if m is not None:
@@ -941,6 +938,9 @@ def start(settings, db_connect):
       cherrypy.response.status = 302
       cherrypy.response.headers['Location'] = cherrypy.request.path_info
       cherrypy.response.body = None
+
+  # set 404 handler
+  cherrypy.config.update({'error_page.404': error_page_404})
 
 
   def connect(thread_index):

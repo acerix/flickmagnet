@@ -998,7 +998,7 @@ WHERE
         'tools.staticdir.on': True,
         'tools.staticdir.dir': settings['download_dir'],
         'tools.staticdir.content_types' : {
-          'vob': 'video/mp4'
+          'VOB': 'video/mp4'
         }
       }
     }

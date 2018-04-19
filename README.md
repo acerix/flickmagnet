@@ -1,6 +1,6 @@
 # Flick Magnet
 
-Open source NetFlix clone.
+HTTP server for streaming public domain movies and TV shows from torrent files to your web browser.
 
 ## Screenshot
 
@@ -17,7 +17,7 @@ python3 setup.py install --optimize=1
 Install examples/flickmagnet.service in systemd and start/enable the service, or run the installed flickmagnet.py with python3:
 
 ```
-./flickmagnet.sh
+python3 ./flickmagnet/flickmagnet.py
 ```
 
 ## Open in Browser

@@ -908,6 +908,23 @@ def start(settings, db_connect):
       video_filename = m.group(2)
       mount_dir = os.path.join(settings['download_dir'], info_hash)
 
+      # check that torrent exists in database
+      dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  id
+FROM
+  torrent
+WHERE
+  hash = ?
+""", [
+  info_hash
+])
+      torrent = dbc.fetchone()
+
+      if torrent is None:
+        print('Torrent not found in database')
+        return
+
       # create directory to mount
       if not os.path.isdir(mount_dir):
         os.mkdir(mount_dir)

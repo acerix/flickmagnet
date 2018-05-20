@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 # Unmount torrents (needs root?)
-umount "`dirname $0`"/flickmagnet/htdocs/torrents/*
+sudo umount "`dirname $0`"/flickmagnet/htdocs/torrents/*
 
 # Force stop btfs
 killall btfs
@@ -13,4 +13,7 @@ rm -r ~/btfs/
 
 # Delete config, cache, logs for the current user
 rm -r ~/.config/flickmagnet/ ~/.cache/flickmagnet/ ~/.local/share/flickmagnet/
+
+# Delete old empty torrent dirs
+rmdir "`dirname $0`"/flickmagnet/htdocs/torrents/*
 

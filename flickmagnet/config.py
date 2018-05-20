@@ -45,8 +45,8 @@ settings['server']['runtime_dir'] = runtime_dir
 settings['server']['htdocs_dir'] = os.path.join(package_dir, 'htdocs')
 
 # where downloads are stored
-# settings['server']['download_dir'] = os.path.join(settings['server']['htdocs_dir'], 'torrents')
-settings['server']['download_dir'] = os.path.join(cache_dir, 'torrents')
+settings['server']['download_dir'] = os.path.join(settings['server']['htdocs_dir'], 'torrents')
+# settings['server']['download_dir'] = os.path.join(cache_dir, 'torrents')
 
 # create download dir if none
 if not os.path.isdir(settings['server']['download_dir']):
@@ -154,7 +154,6 @@ if table_count is 0:
 
   # @todo importing data should be an option when first opening the web interface
   print('Importing public domain videos...')
-  flickmagnet_script_dir = os.path.dirname(os.path.abspath(__file__))
-  import_script_path = '/usr/bin/python3 ' + flickmagnet_script_dir + '/import.py'
-  os.system(import_script_path + ' https://raw.githubusercontent.com/acerix/public-domain-media-db/master/movies.csv')
-  os.system(import_script_path + ' https://raw.githubusercontent.com/acerix/public-domain-media-db/master/shows.csv')
+  import_script_command = '/usr/bin/python3 ' + os.path.dirname(os.path.abspath(__file__)) + '/import.py'
+  os.system(import_script_command + ' https://raw.githubusercontent.com/acerix/public-domain-media-db/master/movies.csv')
+  os.system(import_script_command + ' https://raw.githubusercontent.com/acerix/public-domain-media-db/master/shows.csv')

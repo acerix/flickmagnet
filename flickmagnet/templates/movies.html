@@ -2,6 +2,10 @@
 
 <div class="container mt-3">
 
+% if not len(movies):
+  <p>No movies found.</p>
+% endif
+
 % for r in movies:
   <div class="card">
     <div class="card-header">

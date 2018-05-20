@@ -35,7 +35,18 @@ class RootController:
 
   @cherrypy.expose
   def index(self):
-    return lookup.get_template("index.html").render()
+
+    dbc = cherrypy.thread_data.db.execute("""
+SELECT
+  COUNT(*) torrent_count
+FROM
+  torrent
+""")
+    result = dbc.fetchone()
+
+    return lookup.get_template("index.html").render(
+      torrent_count = result['torrent_count']
+    )
 
   # search
 
@@ -176,7 +187,7 @@ LIMIT
   @cherrypy.expose
   def title(self, title_id):
 
-    page_template = lookup.get_template("title.html")
+    # page_template = lookup.get_template("title.html")
 
     page_template = lookup.get_template("play.html")
 
@@ -576,8 +587,10 @@ ORDER BY
       videos = release_videos
     ))
 
+    playlist_filename = 'flickmagnet_' + re.sub('[^A-Za-z0-9 -_]+', '', title).replace(' ', '_') + '.xspf'
+
     cherrypy.response.headers['Content-Type'] = 'application/xspf+xml'
-    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flickmagnet.xspf"'
+    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="' + playlist_filename + '"'
 
     return xspf_data
 
@@ -729,8 +742,10 @@ ORDER BY
       videos = release_videos
     ))
 
+    playlist_filename = 'flickmagnet_' + re.sub('[^A-Za-z0-9 -_]+', '', title).replace(' ', '_') + '.m3u'
+
     cherrypy.response.headers['Content-Type'] = 'audio/x-mpequrl'
-    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="flickmagnet.m3u"'
+    cherrypy.response.headers['Content-Disposition'] = 'attachment; filename="' + playlist_filename + '"'
 
     return video_data
 
@@ -860,9 +875,16 @@ WHERE
   # import video list
 
   @cherrypy.expose
-  def title_import(self):
+  def title_import(self, init=0, text=None):
     page_template = lookup.get_template("title_import.html")
-    return page_template.render()
+    return page_template.render(
+      init = init,
+      text = text,
+      import_stats = {
+        'movies': 3,
+        'shows': 13
+      }
+    )
 
 
 

@@ -442,7 +442,7 @@ with open(import_csv_filename) as csv_file:
       row['release_video_id'] = get_movie_release_video_id(row)
 
 
-
 # close db
 db.commit()
 db_cursor.close()
+

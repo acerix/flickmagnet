@@ -1,10 +1,18 @@
 <%inherit file="base.html"/>
 
 <div class="container mt-3">
+% if import_stats:
+  <h1>Import Result</h1>
+  <p>${import_stats['movies']} movies</p>
+  <p>${import_stats['shows']} shows</p>
+% endif
+</div>
+
+<div class="container mt-3">
   <h1>Import Titles</h1>
-  <form>
-    <textarea></textarea>
+  <form action="" method="post">
+    <textarea name="text" style="width:100%;">${text if text else ''}</textarea>
+    <br>
     <input type="submit">
   </form>
-
 </div>

@@ -4,11 +4,24 @@
   <div class="row">
     <div class="col-lg-12 text-center">
       <h1>Welcome!</h1>
-      <p class="lead">What do you feel like watching?</p>
-      <ul class="list-unstyled">
-        <a class="btn btn-primary btn-lg" href="/movies">Movie</a>
-        <a class="btn btn-primary btn-lg" href="/tv">TV Show</a>
-      </ul>
+      % if torrent_count:
+        <p class="lead">What do you feel like watching?</p>
+        <ul class="list-unstyled">
+          <a class="btn btn-primary btn-lg" href="/movies">Movie</a>
+          <a class="btn btn-primary btn-lg" href="/tv">TV Show</a>
+        </ul>
+      % else:
+        <p class="lead">The video database is empty. Import public domain videos?</p>
+        <form action="/title_import" method="post">
+          <input type="hidden" name="init" value="1">
+          <textarea name="text" cols="64">
+https://raw.githubusercontent.com/acerix/public-domain-media-db/master/movies.csv
+https://raw.githubusercontent.com/acerix/public-domain-media-db/master/shows.csv
+</textarea>
+          <br>
+          <input type="submit" value="Import">
+        </form>
+      % endif
     </div>
   </div>
 </div>

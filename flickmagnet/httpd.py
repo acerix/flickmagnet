@@ -29,6 +29,27 @@ default_torrent_trackers = [
   'http://denis.stalker.h3q.com:6969/announce'
 ]
 
+# autodetect the video filename from the video release torrent
+def detect_video_filename(info_hash, settings):
+
+  mount_dir = os.path.join(settings['download_dir'], info_hash)
+
+  # assume it's the biggest file
+  find_result = subprocess.run(
+    'find'
+    + ' "' + mount_dir + '"'
+    + ' -type f'
+    + ' -printf "%s\\t%p\\n"'
+    + ' | sort -n | tail -1 | awk \'{print $2}\'',
+    stdout=subprocess.PIPE,
+    shell=True,
+    check=True
+  )
+
+  # @todo better way to strip garbage...
+  return str(find_result.stdout).replace(mount_dir, '')[3:-3]
+
+
 class RootController:
 
   # welcome
@@ -396,7 +417,7 @@ SELECT
   series_season_episode_release_video.id,
   torrent.hash,
   series_season_episode_release_video.filename,
-  'nigz' title
+  torrent.hash title
 FROM
   series_season_episode_release_video
 JOIN
@@ -927,7 +948,7 @@ def start(settings, db_connect):
     m = re.search(r'/torrents/([0-9a-f]{40})(/.*)', cherrypy.request.path_info)
     if m is not None:
       info_hash = m.group(1)
-      video_filename = m.group(2)
+      video_filename = m.group(2)[1:]
       mount_dir = os.path.join(settings['download_dir'], info_hash)
 
       # check that torrent exists in database
@@ -953,29 +974,40 @@ WHERE
 
       # if the torrent already contains files, assume the requested file is not in the torrent, return to 404
       if len( os.listdir(mount_dir) ):
-        return
+        if len(video_filename):
+          print('torrent already contains files')
+          return
 
-      torrent_params = ''
+      else:
+        torrent_params = ''
 
-      for tracker in default_torrent_trackers:
-        torrent_params = torrent_params + '&tr=' + quote(tracker)
+        for tracker in default_torrent_trackers:
+          torrent_params = torrent_params + '&tr=' + quote(tracker)
 
-      # mount torrent with btfs
-      subprocess.Popen([
-        'btfs',
-        'magnet:?xt=urn:btih:' + info_hash + torrent_params,
-        mount_dir
-      ])
+        # mount torrent with btfs
+        subprocess.Popen([
+          'btfs',
+          'magnet:?xt=urn:btih:' + info_hash + torrent_params,
+          mount_dir
+        ])
 
-      # wait for files to appear (ie. metadata downloaded)
-      while len( os.listdir(mount_dir) ) == 0:
-        # print('Waiting for metadata...')
-        time.sleep(1)
+        # wait for files to appear (ie. metadata downloaded)
+        while len( os.listdir(mount_dir) ) == 0:
+          # print('Waiting for metadata...')
+          time.sleep(1)
+
+
+      # autodetect filename if blank
+      if len(video_filename) == 0:
+        video_filename = detect_video_filename(info_hash, cherrypy.thread_data.settings)
+        video_url = cherrypy.request.path_info + video_filename
+      else:
+        video_url = cherrypy.request.path_info
 
       # reload to the file which now exists if it's in the torrent
-      #cherrypy.HTTPRedirect(cherrypy.request.path_info)
+      #cherrypy.HTTPRedirect(video_url)
       cherrypy.response.status = 302
-      cherrypy.response.headers['Location'] = cherrypy.request.path_info
+      cherrypy.response.headers['Location'] = video_url
       cherrypy.response.body = None
 
   # set 404 handler
